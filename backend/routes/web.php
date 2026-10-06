@@ -4,10 +4,13 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CmsController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\EnquiryController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => response()->json(['name' => 'Global Link Multiservice API', 'phase' => 3]));
+Route::get('/', fn () => response()->json(['name' => 'Global Link Multiservice API', 'phase' => 4]));
+Route::get('/api/chat/session', [ChatController::class, 'session'])->middleware('throttle:30,1');
+Route::post('/api/chat', [ChatController::class, 'store'])->middleware('throttle:chat');
 Route::get('/api/enquiries/session', [EnquiryController::class, 'session'])->middleware('throttle:30,1');
 Route::post('/api/enquiries', [EnquiryController::class, 'store'])->middleware('throttle:enquiries');
 Route::prefix('api/admin')->group(function (): void {

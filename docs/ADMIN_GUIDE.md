@@ -36,7 +36,9 @@ Audit is read-only with action/entity filters and pagination. Entries contain ac
 
 Use unpublish/deactivate for base records. There is no destructive base-record deletion API, slug rename/redirect workflow, revision history or concurrent-edit conflict handling. Service children are replaced on save; avoid simultaneous edits to the same service/FAQ. Public service lists cap at 100 and admin lists at 250. Never routinely reseed a CMS-managed installation.
 
-Gemini/chatbot and deployment remain Phase 4 and later. Do not place bank account numbers, payment QR codes, submitted identity documents or secrets in public content. No external AI or paid service is required.
+The Phase 4 assistant uses only published service content, active FAQs/providers and public contact settings. Maintain clear, verified wording: provider names alone do not establish partnerships, and missing prices/timings are not inferred. Do not place bank account numbers, submitted identity documents or secrets in public CMS content. AI configuration is a private server operation, with disabled mode supported; no mandatory paid infrastructure was added. Deployment remains later work.
+
+The assistant quotes selected published CMS facts rather than generating factual prose, and links visitors to source pages or the enquiry form. It cannot create leads, change status/notes or access this workspace. Use the same Phase 3 lead workflow after visitors submit consent-based enquiries. Browser chat is temporary, clears on refresh/admin navigation and is not saved as a lead. Google Gemini may process submitted questions when enabled; visitors are warned not to share personal/sensitive information. Review provider data-use terms and validate a real key before production activation.
 
 ## Enquiries and follow-up
 

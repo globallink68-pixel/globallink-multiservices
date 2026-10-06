@@ -1,12 +1,12 @@
 # Global Link Multiservice
 
-Phase 1 public website, Phase 2 administrator CMS and Phase 3 enquiry/lead management. Independent React/Vite frontend, Laravel API and MySQL catalogue. No sibling project or database is used. Phase 4 has not started.
+Phase 1 public website, Phase 2 administrator CMS, Phase 3 enquiry/lead management and Phase 4 database-grounded Gemini customer assistant. Independent React/Vite frontend, Laravel API and MySQL catalogue. No sibling project or database is used. Phase 5 has not started.
 
 ## Project layout
 
 - `frontend/`: public website and separate lazy-loaded administrator workspace, tests and static build.
 - `backend/`: public catalogue and protected cookie-session CMS APIs, migrations, seed data and tests.
-- `docs/`: architecture, schema, administrator guide, hosting strategy and Phase 1–2 evidence.
+- `docs/`: architecture, schema, administrator guide, hosting strategy and Phase 1–4 evidence.
 - `scripts/`: guarded local database start and validation tools.
 - `tools/`: ignored local PHP/Composer runtime and isolated MySQL data; never deploy or commit.
 
@@ -30,7 +30,7 @@ If the isolated database is stopped, run `powershell -File scripts/Start-Databas
 
 ## Checks and build
 
-In backend: `php artisan test`, `php vendor/bin/pint --test`, `composer validate --strict`, `composer audit`. In frontend: `npm test`, `npm run lint`, `npm run build`, `npm audit`. At root: `node scripts/secret-scan.cjs` and `git diff --check`. Full commands assume local environment files are configured. Test migrations affect only the dedicated test database.
+In backend: `php artisan test`, `php vendor/bin/pint --dirty --format=agent`, `composer validate --strict`, `composer audit`. In frontend: `npm test`, `npm run lint`, `npm run build`, `npm audit`. At root: `node scripts/secret-scan.cjs` and `git diff --check`. Full commands assume local environment files are configured. Test migrations affect only the dedicated test database.
 
 The build output is `frontend/dist`, generated on demand and ignored by Git. Production is static assets plus a PHP API; see docs/HOSTINGER_DEPLOYMENT.md. No deployment has been performed.
 
@@ -38,6 +38,8 @@ The build output is `frontend/dist`, generated on demand and ignored by Git. Pro
 
 The public catalogue, filters/search, service details, providers, checklists, verified fees, FAQs, images and branding/contact settings are CMS driven. Visit `/admin/login` after running `php artisan admin:create business-email --name="Administrator"` from backend and entering a password at its hidden prompt. No default account is seeded. See docs/ADMIN_GUIDE.md for operating instructions.
 
-Real supplied logo was unavailable as a filesystem asset during Phase 2. The temporary GL mark remains; Settings safely uploads/replaces it. Service pages and the homepage contact CTA now submit consent-based enquiries; `/admin/enquiries` manages status/history/notes with server-side authorization. Public success returns only a reference; no public lead lookup exists. Gemini/chatbot and deployment remain later phases. No external AI requests occur.
+Real supplied logo was unavailable as a filesystem asset during Phase 2. The temporary GL mark remains; Settings safely uploads/replaces it. Service pages and the homepage contact CTA submit consent-based enquiries; `/admin/enquiries` manages status/history/notes with server-side authorization. Public success returns only a reference; no public lead lookup exists. The public assistant retrieves published CMS facts and lets Gemini select references; Laravel renders only stored facts. AI never creates leads or accesses admin data. Enquiry handoff uses the existing form.
 
-See docs/PHASE_3_REPORT.md for current validation, browser evidence, cleanup and limitations. Phase 1–2 reports remain historical evidence. Nothing has been pushed, merged or deployed.
+The assistant defaults to disabled. Set `GEMINI_ENABLED=true` and `GEMINI_API_KEY` only in Laravel's private environment, with optional `GEMINI_MODEL` (default `gemini-2.5-flash-lite`) and `GEMINI_TIMEOUT` (default 12 seconds, clamped to 3–20). Provider failures show contact/enquiry fallback. Never use a VITE-prefixed key. Tests mock the provider; no paid/live API call is required. No local test key was available for live Gemini verification.
+
+See docs/PHASE_4_REPORT.md for current validation, browser evidence, cleanup and limitations. Phase 1–3 reports remain historical evidence. Nothing has been pushed, merged or deployed.

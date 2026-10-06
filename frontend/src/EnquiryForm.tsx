@@ -4,7 +4,7 @@ import { getData, type Service } from "./api";
 
 export default function EnquiryForm({ service }: { service?: Service }) {
   const location = useLocation();
-  const [open, setOpen] = useState(Boolean(service));
+  const [open, setOpen] = useState(Boolean(service) || location.hash === "#enquiry");
   const [services, setServices] = useState<Service[]>([]);
   const [values, setValues] = useState({
     name: "",
@@ -22,6 +22,9 @@ export default function EnquiryForm({ service }: { service?: Service }) {
   const [fields, setFields] = useState<Record<string, string[]>>({});
   const [reference, setReference] = useState("");
   const successRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (location.hash === "#enquiry") setOpen(true);
+  }, [location.hash]);
   useEffect(() => {
     if (reference) {
       successRef.current?.scrollIntoView?.({ block: "center" });

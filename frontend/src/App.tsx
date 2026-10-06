@@ -3,6 +3,7 @@ import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { getData, type Site, type Service } from "./api";
 import { Brand, Ecosystem, Icon, ServiceCard, mediaSource } from "./components";
 import EnquiryForm from "./EnquiryForm";
+import ChatWidget from "./ChatWidget";
 const AdminApp = lazy(() => import("./admin/AdminApp"));
 
 function Seo({ title, description }: { title: string; description: string }) {
@@ -855,6 +856,7 @@ function PublicApp() {
           />
         </Routes>
       </main>
+      <ChatWidget />
       <footer className="footer">
         <div className="wrap footer-grid">
           <div>

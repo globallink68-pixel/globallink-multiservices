@@ -1,4 +1,4 @@
-# Architecture — Phases 1–3
+# Architecture — Phases 1–4
 
 ## Boundaries
 
@@ -46,7 +46,17 @@ Public components consume CMS images, CTA text, optional-document flags, provide
 6: comprehensive security, SEO, accessibility and performance QA.
 7: verified Hostinger deployment package, migration/backup/restore procedure and HTTPS acceptance.
 
-Phase 4 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
+Phase 4 is implemented; Phase 5 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
+
+## Customer assistant
+
+React's public-only floating widget → CSRF-protected POST `/api/chat` → `ChatRetrieval` scoped MySQL reads → Laravel HTTP client → Gemini structured fact-reference selection → server-validated references → escaped CMS fact cards and controlled enquiry link. GET `/api/chat/session` bootstraps CSRF. No chat read/history API or chat-content persistence exists.
+
+Retrieval deterministically ranks published services under active categories from question/title/slug/provider matches, optional current published service slug and bounded user history. At most three services, 60 facts and 16,000 fact-text characters enter context. Relevant document/eligibility/process items, active verified service fees, active service/global FAQs, active associated provider information and allowlisted public contact settings are queried. No users, leads, notes, audit rows or private settings are queried. History helps resolve a service locally; it is not forwarded to Gemini as authoritative content.
+
+The provider receives a JSON-only schema selecting up to 12 fact IDs plus a missing-information flag. Laravel rejects invalid/unknown references, extra generated prose, blocked/truncated/malformed outputs and provider failures. Only retrieved CMS strings are displayed; generated factual prose is never rendered. Missing requested kinds and sensitive claims receive conservative confirmation guidance. No tools, arbitrary SQL, external search, file access, admin API access or business writes are available to the model.
+
+The key exists only in private Laravel environment/config and the provider authentication header. The endpoint is fixed HTTPS; the model name is validated. Requests have a three-second connection timeout and bounded total timeout, no automatic retries, fixed output budget and per-IP/session rate limits. Disabled/missing configuration and quota/network/provider errors return safe fallback. No additional production infrastructure or schema was added. CMS quality, bounded lexical matching, shared-host latency and unverified live-provider behavior remain limitations.
 
 ## Enquiry and lead management
 
