@@ -111,7 +111,7 @@ class PublicCatalogueTest extends TestCase
     public function test_api_is_read_only_and_no_future_admin_chat_or_enquiry_route_exists(): void
     {
         foreach (['/api/services', '/api/chat', '/api/enquiries', '/api/admin/services'] as $path) {
-            $this->postJson($path, [])->assertStatus($path === '/api/services' ? 405 : 404);
+            $this->postJson($path, [])->assertStatus($path === '/api/services' ? 405 : ($path === '/api/admin/services' ? 401 : 404));
         }
         $this->assertDatabaseCount('users', 0);
     }

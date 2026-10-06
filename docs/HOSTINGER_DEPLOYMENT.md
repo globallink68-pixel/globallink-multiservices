@@ -1,6 +1,6 @@
 # Hostinger deployment strategy — no deployment performed
 
-This is a Phase 1 architecture plan. Verify the selected hosting plan's actual PHP version, extensions, MySQL access, document-root options and shell availability before Phase 7. The current Composer lock requires PHP 8.4+. Do not deploy it onto PHP 8.3 without a separately reviewed dependency resolution and full regression.
+This is the Phases 1–2 architecture plan. Verify the selected plan's PHP, extensions, MySQL, document roots and shell availability before Phase 7. The lock requires PHP 8.4+ and GD with JPEG/PNG/WebP support. PHP 8.3 or absent GD requires a separately reviewed change and full regression.
 
 ## Intended production layout
 
@@ -8,13 +8,17 @@ Build frontend locally with npm ci / npm run build. Serve frontend/dist as stati
 
 Prefer one HTTPS origin: static /assets and index.html for the React SPA, /api and /up routed to the Laravel public front controller. BrowserRouter routes such as /services/bank-csp must return the SPA on direct navigation; /api failures must remain JSON and never rewrite to the SPA. On Apache/LiteSpeed use a reviewed rewrite configuration that checks real static files first and separates API routing from the SPA fallback. Do not blindly copy a rule that exposes the entire backend directory.
 
-A dedicated API subdomain is a fallback only if document-root limitations demand it; explicitly configure CORS, credentials and frontend base URL then. Development uses Vite's same-origin proxy and does not need a production Node server. No always-running worker, Python process or Redis is needed for Phase 1.
+Phase 2 assumes one origin. An API subdomain requires a separately validated CORS/cookie/CSRF design and frontend base URL; it is not configured here. Development uses Vite's same-origin proxy. No production Node/Python service, Redis, persistent worker or paid storage is required.
 
 ## Environment and rollout gate
 
 Create a new production database/user with only necessary privileges; never use another project's schema. Set APP_ENV=production, APP_DEBUG=false, APP_URL to the HTTPS domain, a generated APP_KEY, actual MySQL credentials, secure cookies and appropriate trusted proxy configuration. GEMINI_API_KEY/MODEL stay blank until Phase 4 approval. Never upload development environment files or the ignored tools directory.
 
-The public middleware rejects insecure/debug production requests. Test HTTPS detection on the actual host before switching traffic. Cache config/routes only after verified environment values; ensure writable storage/bootstrap cache. Use Laravel's maintenance/migration procedure and back up the dedicated database before migrations. Do not run migrate:fresh on live data. Run initial catalogue seed only for a new empty installation, then manage verified content through the future CMS.
+The middleware rejects insecure/debug production requests. Test HTTPS detection on the actual host before switching traffic. Cache config/routes only after verified environment values; ensure writable storage/bootstrap cache. Back up the dedicated database before migrations. Never run migrate:fresh on live data. Seed only a new empty installation, then use the CMS.
+
+Keep encrypted database sessions, HttpOnly/Secure/SameSite=Lax cookies and an appropriate lifetime. Route `/api/admin/*` to Laravel web routes preserving cookies and CSRF headers. Create administrators through `php artisan admin:create business-email --name="Administrator"` using the hidden password prompt on the private host shell. No default account/public registration exists. Never put bootstrap passwords in CLI arguments or repository examples.
+
+Raster media lives in `backend/storage/app/private/cms` under UUID filenames. Back up this directory with the database. Never expose the private disk or backend as static content. `/api/media/{uuid}` permits only public references; `/api/admin/media/{uuid}` requires an administrator. No storage:link is needed. A reviewed reference-aware cleanup procedure is needed for unused media; a pruning UI is deferred.
 
 Phase 7 must validate rewrite behavior, public/private paths, HTTPS, headers, production errors, backups/restore, migration permissions, deployment rollback, secrets and end-to-end acceptance. No Hostinger account was accessed, no domain was changed and nothing was uploaded in this phase.
 

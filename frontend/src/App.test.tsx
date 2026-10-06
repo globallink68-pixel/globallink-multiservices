@@ -111,7 +111,9 @@ it("reusable detail hides empty sections and sets service SEO metadata", async (
   expect(
     screen.queryByRole("heading", { name: "Configured fee information" }),
   ).not.toBeInTheDocument();
-  expect(document.title).toBe("Website Development | Global Link");
+  await waitFor(() =>
+    expect(document.title).toBe("Website Development | Global Link"),
+  );
   expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
     "content",
     "Build your digital presence",
@@ -261,4 +263,26 @@ it("shows an honest empty state when no services are published", async () => {
     await screen.findByText(/No featured services are currently published/),
   ).toBeInTheDocument();
   expect(screen.queryByText("Loading services…")).not.toBeInTheDocument();
+});
+
+it("CMS branding and about text reach public pages", async () => {
+  const image = "/api/media/11111111-1111-1111-1111-111111111111";
+  fetchMock.mockImplementation((url: string) =>
+    url === "/api/site"
+      ? reply({
+          ...site,
+          settings: {
+            ...site.settings,
+            logo: image,
+            tagline: "Edited company tagline",
+            about_summary: "Edited about summary",
+          },
+        })
+      : reply([service]),
+  );
+  open();
+  expect(await screen.findByText("Edited about summary")).toBeInTheDocument();
+  expect(
+    screen.getAllByAltText("GLOBAL LINK MULTISERVICE logo")[0],
+  ).toHaveAttribute("src", image);
 });

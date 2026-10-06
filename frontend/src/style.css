@@ -1633,3 +1633,48 @@ details[open] .faq-plus {
     transition: none !important;
   }
 }
+
+.brand-logo {
+  width: auto;
+  max-width: 95px;
+  height: 48px;
+  object-fit: contain;
+}
+.service-icon-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.detail-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 24px;
+  transform: rotate(6deg);
+}
+.provider-logo {
+  max-width: 100px;
+  height: 45px;
+  object-fit: contain;
+  margin-bottom: 14px;
+}
+.optional-document {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #edf4ff;
+  color: #35629c;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.social-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.social-links a {
+  font-size: 13px;
+  text-transform: capitalize;
+}

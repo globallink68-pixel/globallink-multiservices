@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, lazy } from "react";
 import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { getData, type Site, type Service } from "./api";
-import { Brand, Ecosystem, Icon, ServiceCard } from "./components";
+import { Brand, Ecosystem, Icon, ServiceCard, mediaSource } from "./components";
+const AdminApp = lazy(() => import("./admin/AdminApp"));
 
 function Seo({ title, description }: { title: string; description: string }) {
   const location = useLocation();
@@ -83,6 +84,15 @@ function Contact({ site }: { site: Site }) {
           )}
         </div>
         {s.address && <p>{s.address}</p>}
+        <div className="social-links">
+          {["facebook", "instagram", "linkedin", "youtube"]
+            .filter((k) => (s[k] || "").startsWith("https://"))
+            .map((k) => (
+              <a key={k} href={s[k]} target="_blank" rel="noopener noreferrer">
+                {k[0].toUpperCase() + k.slice(1)}
+              </a>
+            ))}
+        </div>
       </div>
     </section>
   );
@@ -164,9 +174,8 @@ function Home({ site }: { site: Site }) {
         </div>
         <div>
           <p className="large-copy">
-            Whether you’re starting a service outlet, building an online
-            presence or exploring a new business opportunity, the next step
-            should feel clear.
+            {site.settings.about_summary ||
+              "Whether you’re starting a service outlet, building an online presence or exploring a new business opportunity, the next step should feel clear."}
           </p>
           <p>
             Global Link brings business, digital services, technology and
@@ -293,18 +302,22 @@ function Home({ site }: { site: Site }) {
               "Explore social media, search, design and video services for your next campaign.",
               "growth",
             ],
-          ].map(([slug, label, title, copy, icon]) => (
-            <article key={slug}>
-              <Icon name={icon} size={32} />
-              <span className="eyebrow">{label}</span>
-              <h3>{title}</h3>
-              <p>{copy}</p>
-              <Link className="text-link" to={"/services?category=" + slug}>
-                Explore category <Icon name="arrow" size={18} />
-                <span className="sr-only"> {label}</span>
-              </Link>
-            </article>
-          ))}
+          ]
+            .filter(([slug]) => site.categories.some((c) => c.slug === slug))
+            .map(([slug, label, title, copy, icon]) => (
+              <article key={slug}>
+                <Icon name={icon} size={32} />
+                <span className="eyebrow">
+                  {site.categories.find((c) => c.slug === slug)?.name || label}
+                </span>
+                <h3>{title}</h3>
+                <p>{copy}</p>
+                <Link className="text-link" to={"/services?category=" + slug}>
+                  Explore category <Icon name="arrow" size={18} />
+                  <span className="sr-only"> {label}</span>
+                </Link>
+              </article>
+            ))}
         </div>
       </section>
       <section className="section wrap process-section">
@@ -400,8 +413,14 @@ function Catalogue({ site }: { site: Site }) {
   return (
     <div className="wrap section catalogue-page">
       <Seo
-        title={"Explore services | " + site.settings.company_name}
-        description="Explore banking business services, Digital Seva, business opportunities, software and digital marketing."
+        title={
+          site.categories.find((c) => c.slug === category)?.seo_title ||
+          "Explore services | " + site.settings.company_name
+        }
+        description={
+          site.categories.find((c) => c.slug === category)?.seo_description ||
+          "Explore banking business services, Digital Seva, business opportunities, software and digital marketing."
+        }
       />
       <Link className="breadcrumb" to="/">
         Home / Services
@@ -533,11 +552,20 @@ function Detail({ site }: { site: Site }) {
             <h1>{s.title}</h1>
             <p className="intro">{s.short_description}</p>
             <a className="button primary" href="#contact">
-              Discuss this service <Icon name="arrow" size={18} />
+              {s.cta_text || "Discuss this service"}{" "}
+              <Icon name="arrow" size={18} />
             </a>
           </div>
           <div className="detail-icon">
-            <Icon name={s.icon} size={92} />
+            {mediaSource(s.hero_image || s.icon_path) ? (
+              <img
+                className="detail-hero-image"
+                src={mediaSource(s.hero_image || s.icon_path)}
+                alt={s.title}
+              />
+            ) : (
+              <Icon name={s.icon} size={92} />
+            )}
           </div>
         </div>
       </section>
@@ -573,7 +601,12 @@ function Detail({ site }: { site: Site }) {
                       <li key={i.label}>
                         <Icon name="check" size={18} />
                         <div>
-                          {i.label}
+                          {i.label}{" "}
+                          {kind === "document" && i.is_required === false && (
+                            <small className="optional-document">
+                              Optional
+                            </small>
+                          )}
                           {i.body && <p>{i.body}</p>}
                         </div>
                       </li>
@@ -594,6 +627,13 @@ function Detail({ site }: { site: Site }) {
               <div className="provider-grid">
                 {s.providers.map((p) => (
                   <article key={p.name}>
+                    {mediaSource(p.logo_path) && (
+                      <img
+                        className="provider-logo"
+                        src={mediaSource(p.logo_path)}
+                        alt={p.name + " logo"}
+                      />
+                    )}
                     <h3>{p.name}</h3>
                     {p.description && <p>{p.description}</p>}
                     {p.eligibility.length > 0 && (
@@ -618,6 +658,10 @@ function Detail({ site }: { site: Site }) {
                     )}
                     {p.fee_information && <p>{p.fee_information}</p>}
                     {p.processing_notes && <p>{p.processing_notes}</p>}
+                    {p.notes && <p>{p.notes}</p>}
+                    {p.disclaimer && (
+                      <p className="fine-print">{p.disclaimer}</p>
+                    )}
                   </article>
                 ))}
               </div>
@@ -679,6 +723,16 @@ function Detail({ site }: { site: Site }) {
   );
 }
 export default function App() {
+  const route = useLocation();
+  return route.pathname.startsWith("/admin") ? (
+    <Suspense fallback={<p role="status">Loading workspace…</p>}>
+      <AdminApp />
+    </Suspense>
+  ) : (
+    <PublicApp />
+  );
+}
+function PublicApp() {
   const [site, setSite] = useState<Site | null>(null);
   const [error, setError] = useState("");
   const [menu, setMenu] = useState(false);
@@ -702,6 +756,20 @@ export default function App() {
       window.scrollTo(0, 0);
     }
   }, [location.pathname, location.hash]);
+  useEffect(() => {
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    const src = mediaSource(site?.settings.favicon);
+    if (src) {
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.append(link);
+      }
+      link.href = src;
+    } else {
+      link?.remove();
+    }
+  }, [site?.settings.favicon]);
   if (!site)
     return (
       <main className="site-loading">
@@ -737,7 +805,11 @@ export default function App() {
       <header className="site-header">
         <div className="wrap header-inner">
           <Link to="/" aria-label={site.settings.company_name + " home"}>
-            <Brand name={site.settings.company_name} />
+            <Brand
+              name={site.settings.company_name}
+              logo={site.settings.logo}
+              tagline={site.settings.tagline}
+            />
           </Link>
           <button
             className="menu-button"
@@ -785,7 +857,11 @@ export default function App() {
         <div className="wrap footer-grid">
           <div>
             <Link to="/">
-              <Brand name={site.settings.company_name} />
+              <Brand
+                name={site.settings.company_name}
+                logo={site.settings.footer_logo || site.settings.logo}
+                tagline={site.settings.tagline}
+              />
             </Link>
             <p>
               Business possibilities, connected.
@@ -812,7 +888,8 @@ export default function App() {
         </div>
         <div className="wrap footer-bottom">
           <span>
-            © {new Date().getFullYear()} {site.settings.company_name}
+            {site.settings.copyright ||
+              `© ${new Date().getFullYear()} ${site.settings.company_name}`}
           </span>
           <p>{site.settings.footer}</p>
           <a href="#main">Back to top ↑</a>

@@ -4,8 +4,15 @@ export type Category = {
   slug: string;
   summary: string;
   icon: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
 };
-export type Item = { kind: string; label: string; body: string | null };
+export type Item = {
+  kind: string;
+  label: string;
+  body: string | null;
+  is_required?: boolean | number;
+};
 export type Service = {
   id: number;
   slug: string;
@@ -14,6 +21,8 @@ export type Service = {
   description: string;
   icon: string;
   hero_image: string | null;
+  icon_path?: string | null;
+  cta_text?: string;
   featured: boolean;
   category: Category;
   sections?: { title: string; body: string }[];
@@ -26,6 +35,9 @@ export type Service = {
   }[];
   providers?: {
     name: string;
+    logo_path?: string | null;
+    notes?: string | null;
+    disclaimer?: string | null;
     description: string | null;
     eligibility: string[];
     documents: string[];

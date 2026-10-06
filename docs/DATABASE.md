@@ -1,4 +1,4 @@
-# Database — Phase 1
+# Database — Phases 1–2
 
 ## Isolation
 
@@ -8,7 +8,7 @@ Tests enforce the database name and port before RefreshDatabase can execute. Nev
 
 ## Migrations and tables
 
-Four migrations create 18 tables including the migrations ledger. Three framework migrations create users, password_reset_tokens, sessions, cache, cache_locks, jobs, job_batches and failed_jobs. No admin user is seeded.
+Five migrations create 20 tables including the migrations ledger. Three framework migrations create users, password_reset_tokens, sessions, cache, cache_locks, jobs, job_batches and failed_jobs. No admin user is seeded.
 
 The catalogue migration creates nine domain tables:
 
@@ -24,7 +24,11 @@ The catalogue migration creates nine domain tables:
 | faqs | Global or service FAQ; service FK cascade; active/order index |
 | site_settings | Unique key, text value and public flag; API additionally enforces a fixed safe-key allowlist |
 
-Typed content items avoid seven identical child tables while retaining normalized independently editable records. Detailed processing information can use an ordered section; provider processing notes are separate. Upload validation/rendering and admin editing are Phase 2. Future enquiries/enquiry_notes, chat_sessions/chat_messages, audit_logs and media tables will be added in their respective phases; their absence is deliberate.
+Typed items avoid seven identical child tables while retaining independently editable records. Detailed processing information uses ordered sections; provider processing notes are separate. Enquiries/enquiry_notes and chat_sessions/chat_messages remain deferred.
+
+Phase 2 migration `2026_10_06_082727_extend_catalogue_for_admin_cms` adds default-false users.is_admin, category SEO, service icon_path/cta_text, content-item is_required, fee is_active and provider-detail notes/disclaimer. It creates audit_logs (nullable administrator FK, fixed summary, entity/time index) and media_assets (unique UUID/path, MIME/size, administrator FK). Administrator FKs become null if the user is removed. No catalogue row is deleted by migration. down() removes only Phase 2 additions. Fresh+seed and Phase 2 rollback/reapply were verified solely on the guarded test database.
+
+Complex service updates atomically replace that service's ordered children and provider associations. Base records use unpublish/deactivate; no destructive category/service/provider API exists. Slugs lock after creation. Uploaded references must match media_assets UUIDs; arbitrary paths/URLs are rejected. Audit records are read-only through the application.
 
 ## Initial records
 

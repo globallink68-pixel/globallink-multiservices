@@ -70,18 +70,43 @@ export function Icon({
     </svg>
   );
 }
-export function Brand({ name }: { name: string }) {
+export function mediaSource(value?: string | null) {
+  return value && /^\/api\/media\/[a-f0-9-]{36}$/.test(value)
+    ? value
+    : undefined;
+}
+export function Brand({
+  name,
+  logo,
+  tagline,
+}: {
+  name: string;
+  logo?: string;
+  tagline?: string;
+}) {
   return (
     <span className="brand">
-      <span className="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 40 40">
-          <path d="M28 10H17a11 11 0 1 0 0 22h11V21H18" />
-          <path d="M23 8v13h12" />
-        </svg>
-      </span>
+      {mediaSource(logo) ? (
+        <img
+          className="brand-logo"
+          src={mediaSource(logo)}
+          alt={name + " logo"}
+        />
+      ) : (
+        <span
+          className="brand-mark"
+          aria-hidden="true"
+          title="Temporary GL placeholder"
+        >
+          <svg viewBox="0 0 40 40">
+            <path d="M28 10H17a11 11 0 1 0 0 22h11V21H18" />
+            <path d="M23 8v13h12" />
+          </svg>
+        </span>
+      )}
       <span>
         <strong>{name}</strong>
-        <small>BUSINESS POSSIBILITIES, CONNECTED</small>
+        <small>{tagline || "BUSINESS POSSIBILITIES, CONNECTED"}</small>
       </span>
     </span>
   );
@@ -90,7 +115,15 @@ export function ServiceCard({ service }: { service: Service }) {
   return (
     <article className="service-card">
       <span className="icon-tile">
-        <Icon name={service.icon} size={27} />
+        {mediaSource(service.icon_path) ? (
+          <img
+            className="service-icon-image"
+            src={mediaSource(service.icon_path)}
+            alt=""
+          />
+        ) : (
+          <Icon name={service.icon} size={27} />
+        )}
       </span>
       <span className="service-category">{service.category.name}</span>
       <h3>

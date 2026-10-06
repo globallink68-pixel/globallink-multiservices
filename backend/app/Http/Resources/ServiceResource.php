@@ -19,6 +19,8 @@ class ServiceResource extends JsonResource
             'description' => $this->description,
             'icon' => $this->icon,
             'hero_image' => $this->hero_image,
+            'icon_path' => $this->icon_path,
+            'cta_text' => $this->cta_text,
             'featured' => $this->featured,
             'seo_title' => $this->seo_title,
             'seo_description' => $this->seo_description,
@@ -33,8 +35,8 @@ class ServiceResource extends JsonResource
                 ->where('service_id', $this->id)->orderBy('sort_order')->orderBy('id');
 
             $data['sections'] = $ordered('service_sections')->get(['title', 'body']);
-            $data['items'] = $ordered('service_content_items')->get(['kind', 'label', 'body']);
-            $data['fees'] = $ordered('service_fees')->where('is_verified', true)
+            $data['items'] = $ordered('service_content_items')->get(['kind', 'label', 'body', 'is_required'])->map(fn ($item) => [...(array) $item, 'is_required' => (bool) $item->is_required]);
+            $data['fees'] = $ordered('service_fees')->where('is_verified', true)->where('is_active', true)
                 ->get(['label', 'amount_paise', 'currency', 'notes'])
                 ->map(fn ($fee) => [
                     ...(array) $fee,
@@ -46,11 +48,14 @@ class ServiceResource extends JsonResource
                 ->where('d.service_id', $this->id)->where('p.is_active', true)
                 ->orderBy('p.sort_order')->orderBy('p.id')
                 ->get([
-                    'p.name', 'p.description', 'd.eligibility_overrides',
+                    'p.name', 'p.description', 'p.logo_path', 'd.notes', 'd.disclaimer', 'd.eligibility_overrides',
                     'd.document_overrides', 'd.fee_information', 'd.processing_notes',
                 ])
                 ->map(fn ($provider) => [
                     'name' => $provider->name,
+                    'logo_path' => $provider->logo_path,
+                    'notes' => $provider->notes,
+                    'disclaimer' => $provider->disclaimer,
                     'description' => $provider->description,
                     'eligibility' => json_decode($provider->eligibility_overrides ?? '[]', true),
                     'documents' => json_decode($provider->document_overrides ?? '[]', true),

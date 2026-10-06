@@ -14,8 +14,8 @@ class PublicCatalogueController extends Controller
 {
     public function site(): JsonResponse
     {
-        $settings = DB::table('site_settings')->where('is_public', true)->whereIn('key', ['company_name', 'phone', 'email', 'whatsapp', 'address', 'logo', 'social_links', 'footer', 'seo_title', 'seo_description'])->pluck('value', 'key');
-        $categories = Category::where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'slug', 'summary', 'icon']);
+        $settings = DB::table('site_settings')->where('is_public', true)->whereIn('key', ['company_name', 'phone', 'email', 'whatsapp', 'address', 'logo', 'social_links', 'footer', 'seo_title', 'seo_description', 'tagline', 'about_summary', 'facebook', 'instagram', 'linkedin', 'youtube', 'favicon', 'footer_logo', 'copyright'])->pluck('value', 'key');
+        $categories = Category::where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'slug', 'summary', 'icon', 'seo_title', 'seo_description']);
         $faqs = DB::table('faqs')->whereNull('service_id')->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['question', 'answer']);
 
         return response()->json(['data' => compact('settings', 'categories', 'faqs')]);

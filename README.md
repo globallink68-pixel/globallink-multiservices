@@ -1,18 +1,18 @@
 # Global Link Multiservice
 
-Phase 1 public website foundation. Independent React/Vite frontend, Laravel API and MySQL catalogue. No existing project or database is used. Phase 2 has not started.
+Phase 1 public website and Phase 2 administrator CMS. Independent React/Vite frontend, Laravel API and MySQL catalogue. No sibling project or database is used. Phase 3 has not started.
 
 ## Project layout
 
-- `frontend/`: responsive public website, reusable service details, tests and static build.
-- `backend/`: Laravel application, public GET API, migrations, seed data and tests.
-- `docs/`: architecture, schema, hosting strategy, future Gemini/admin instructions and Phase 1 evidence.
+- `frontend/`: public website and separate lazy-loaded administrator workspace, tests and static build.
+- `backend/`: public catalogue and protected cookie-session CMS APIs, migrations, seed data and tests.
+- `docs/`: architecture, schema, administrator guide, hosting strategy and Phase 1–2 evidence.
 - `scripts/`: guarded local database start and validation tools.
 - `tools/`: ignored local PHP/Composer runtime and isolated MySQL data; never deploy or commit.
 
 ## Requirements
 
-PHP **8.4+** with PDO MySQL, mbstring, OpenSSL, ctype, DOM/XML, curl, fileinfo and tokenizer; Composer 2; MySQL 8; Node 22.12+ for development/build only. The committed dependency lock requires PHP 8.4 even though Laravel's general minimum can differ. No Node or Python production service is needed.
+PHP **8.4+** with PDO MySQL, GD (JPEG/PNG/WebP support), mbstring, OpenSSL, ctype, DOM/XML, curl, fileinfo and tokenizer; Composer 2; MySQL 8; Node 22.12+ for development/build only. The committed dependency lock requires PHP 8.4 even though Laravel's general minimum can differ. No Node or Python production service is needed.
 
 ## Local setup
 
@@ -36,6 +36,8 @@ The build output is `frontend/dist`, generated on demand and ignored by Git. Pro
 
 ## Scope and content
 
-The public catalogue, category filters/search, Bank CSP provider information, editable database checklists, FAQ and contact links work now. Administration, enquiry persistence, uploads and AI are later phases. No Gemini key is configured, no chatbot is implemented and no external AI requests occur. The supplied brief contained no logo image; the current SVG GL mark is temporary and must be replaced with the approved asset when supplied.
+The public catalogue, filters/search, service details, providers, checklists, verified fees, FAQs, images and branding/contact settings are CMS driven. Visit `/admin/login` after running `php artisan admin:create business-email --name="Administrator"` from backend and entering a password at its hidden prompt. No default account is seeded. See docs/ADMIN_GUIDE.md for operating instructions.
 
-Review docs/PHASE_1_REPORT.md for exact validation evidence and limitations. Stop after Phase 1 and approve Phase 2 separately.
+Real supplied logo was unavailable as a filesystem asset during Phase 2. The temporary GL mark remains; Settings safely uploads/replaces it. Enquiry persistence, lead management, Gemini/chatbot and deployment remain later phases. No external AI requests occur.
+
+See docs/PHASE_2_REPORT.md for final validation, browser evidence, cleanup and limitations. Phase 1 evidence remains in docs/PHASE_1_REPORT.md. Nothing has been pushed, merged or deployed.
