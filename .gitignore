@@ -1,0 +1,14 @@
+/tools/
+**/node_modules/
+**/vendor/
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.testing.example
+**/dist/
+**/build/
+**/.phpunit.cache/
+**/*.log
+**/*.sqlite
+**/*.tsbuildinfo
+.DS_Store

@@ -1,0 +1,32 @@
+{
+  "name": "globallink-multiservices",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host localhost --port 5175 --strictPort",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host localhost --port 4175 --strictPort",
+    "test": "vitest run",
+    "lint": "oxlint src"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^29.0.0",
+    "oxlint": "^1.0.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.0",
+    "vite": "^8.0.0",
+    "vitest": "^5.0.0"
+  }
+}
