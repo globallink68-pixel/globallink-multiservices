@@ -1678,3 +1678,98 @@ details[open] .faq-plus {
   font-size: 13px;
   text-transform: capitalize;
 }
+.enquiry-panel {
+  margin-top: 1.6rem;
+  border-top: 1px solid #ffffff30;
+  padding-top: 1.6rem;
+  scroll-margin-top: 7rem;
+}
+.enquiry-form {
+  color: white;
+  text-align: left;
+}
+.enquiry-form h3 {
+  color: white;
+}
+.enquiry-form p,
+.enquiry-success p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.enquiry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.enquiry-form label:not(.enquiry-consent):not(.enquiry-trap) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+.enquiry-form input:not([type="checkbox"]),
+.enquiry-form select,
+.enquiry-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d4deea;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font: inherit;
+  color: #15304c;
+  background: white;
+  box-sizing: border-box;
+}
+.enquiry-form input[readonly] {
+  background: #eaf0f6;
+}
+.enquiry-form textarea {
+  resize: vertical;
+}
+.enquiry-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.enquiry-consent input {
+  margin-top: 0.3rem;
+  flex-shrink: 0;
+}
+.enquiry-trap {
+  display: none;
+}
+.enquiry-error {
+  padding: 1rem;
+  background: #fff1ee;
+  color: #852a20;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+.enquiry-error p {
+  color: #852a20;
+}
+.enquiry-privacy {
+  color: #d7e7ef;
+}
+.enquiry-success {
+  padding: 1rem;
+  background: #ffffff15;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.enquiry-success p {
+  color: white;
+}
+.enquiry-form button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+@media (max-width: 600px) {
+  .enquiry-grid {
+    grid-template-columns: 1fr;
+  }
+}

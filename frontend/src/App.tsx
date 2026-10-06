@@ -2,6 +2,7 @@ import { useEffect, useState, Suspense, lazy } from "react";
 import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { getData, type Site, type Service } from "./api";
 import { Brand, Ecosystem, Icon, ServiceCard, mediaSource } from "./components";
+import EnquiryForm from "./EnquiryForm";
 const AdminApp = lazy(() => import("./admin/AdminApp"));
 
 function Seo({ title, description }: { title: string; description: string }) {
@@ -36,7 +37,7 @@ function Faqs({ items }: { items: Site["faqs"] }) {
     </div>
   );
 }
-function Contact({ site }: { site: Site }) {
+function Contact({ site, service }: { site: Site; service?: Service }) {
   const s = site.settings;
   const phone = s.phone?.replace(/\D/g, "");
   return (
@@ -93,6 +94,7 @@ function Contact({ site }: { site: Site }) {
               </a>
             ))}
         </div>
+        <EnquiryForm key={service?.id ?? "general"} service={service} />
       </div>
     </section>
   );
@@ -718,7 +720,7 @@ function Detail({ site }: { site: Site }) {
           </p>
         </aside>
       </div>
-      <Contact site={site} />
+      <Contact site={site} service={s} />
     </>
   );
 }

@@ -1,4 +1,4 @@
-# Architecture — Phases 1–2
+# Architecture — Phases 1–3
 
 ## Boundaries
 
@@ -41,10 +41,19 @@ Public components consume CMS images, CTA text, optional-document flags, provide
 
 ## Subsequent phases — not implemented
 
-3: consent-based enquiry forms, validated persistence, statuses, internal notes and spam protection.
 4: Laravel-only Gemini integration with database-grounded context, budget/rate/history limits, timeout and fallback; no model access to arbitrary SQL.
 5: structured lead capture through normal validated enquiry services.
 6: comprehensive security, SEO, accessibility and performance QA.
 7: verified Hostinger deployment package, migration/backup/restore procedure and HTTPS acceptance.
 
-Phase 3 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
+Phase 4 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
+
+## Enquiry and lead management
+
+Service/contact CTA → React EnquiryForm → same-origin CSRF bootstrap and POST `/api/enquiries` → StoreEnquiryRequest → EnquiryWorkflow → transactional enquiry/initial status history. A current published service under an active category is checked during validation and again inside the transaction. Browser service IDs cannot select an unavailable service; source paths must be `/`, `/services` or that service's canonical detail path. Arbitrary URLs, mismatched detail paths and browser timestamps/status fields are not stored.
+
+Public responses contain only a generated GL-prefixed ULID reference and acknowledgement. There is no public list/detail/update endpoint. Form fields use bounded plain text, explicit consent and a hidden honeypot. Indian mobile numbers normalize optional +91/formatting; letters/invalid numbers fail validation. Named IP limits are 5/minute and 20/hour; a normalized-mobile HMAC key allows 3 submissions/10 minutes. A file-cache lock serializes concurrent mobile submissions, and an HMAC of mobile/service/message rejects duplicates for 10 minutes. No paid CAPTCHA, browser fingerprint or IP/user-agent field is added to lead storage.
+
+Administrator list/detail/status/note endpoints reuse RequireAdministrator and web CSRF. Lists paginate 20, sort newest first and filter search/service/status/inclusive UTC dates. Search uses bound SQL with escaped wildcard characters. Detail excludes database IDs/fingerprint but includes necessary contact, service/source, consent evidence and append-only history/notes. Status writes lock the row and require expected_status to reject stale edits. All six allowed states, including reopening, are manual administrative decisions. Every changed status retains old/new status, actor/time and optional note. Notes are separate append-only rows. Read/status/note audits use fixed safe summaries without contact or message text.
+
+Dashboard lead counts link to authorized filtered lists; no revenue is inferred. React escapes visitor/internal text and moves focus/viewport to public confirmation after submission. Single-host file cache/locks suit the planned PHP/MySQL deployment. Retention, multi-host spam controls, notifications, follow-up scheduling and exports are not implemented.

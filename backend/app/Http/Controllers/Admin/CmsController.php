@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveServiceRequest;
 use App\Models\Service;
 use App\Services\CmsAudit;
+use App\Services\EnquiryWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class CmsController extends Controller
             'categories' => DB::table('categories')->count(), 'active_providers' => DB::table('providers')->where('is_active', true)->count(), 'faqs' => DB::table('faqs')->count(),
             'recent_changes' => DB::table('audit_logs')->latest('id')->limit(8)->get(['action', 'entity_type', 'entity_id', 'summary', 'created_at']),
             'attention' => DB::table('services')->whereNull('hero_image')->orderBy('id')->limit(8)->get(['id', 'title']),
+            'lead_counts' => collect(EnquiryWorkflow::STATUSES)->mapWithKeys(fn (string $status) => [$status => DB::table('enquiries')->where('status', $status)->count()]),
         ]]);
     }
 
@@ -197,7 +199,7 @@ class CmsController extends Controller
 
     public function audit(Request $r): JsonResponse
     {
-        $v = $r->validate(['entity_type' => 'sometimes|in:service,category,provider,faq,settings,administrator,media', 'action' => 'sometimes|string|max:60', 'page' => 'sometimes|integer|min:1|max:100000']);
+        $v = $r->validate(['entity_type' => 'sometimes|in:service,category,provider,faq,settings,administrator,media,enquiry', 'action' => 'sometimes|string|max:60', 'page' => 'sometimes|integer|min:1|max:100000']);
         $q = DB::table('audit_logs as a')->leftJoin('users as u', 'u.id', '=', 'a.administrator_id')->orderByDesc('a.id');
         foreach (['entity_type', 'action'] as $key) {
             if (isset($v[$key])) {

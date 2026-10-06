@@ -1,4 +1,4 @@
-# Administrator guide — Phase 2
+# Administrator guide — Phases 2–3
 
 ## Create an administrator
 
@@ -36,4 +36,14 @@ Audit is read-only with action/entity filters and pagination. Entries contain ac
 
 Use unpublish/deactivate for base records. There is no destructive base-record deletion API, slug rename/redirect workflow, revision history or concurrent-edit conflict handling. Service children are replaced on save; avoid simultaneous edits to the same service/FAQ. Public service lists cap at 100 and admin lists at 250. Never routinely reseed a CMS-managed installation.
 
-Enquiry persistence, lead management, Gemini/chatbot and deployment remain Phase 3 and later. Do not place bank account numbers, payment QR codes, submitted identity documents or secrets in public content. No external AI or paid service is required.
+Gemini/chatbot and deployment remain Phase 4 and later. Do not place bank account numbers, payment QR codes, submitted identity documents or secrets in public content. No external AI or paid service is required.
+
+## Enquiries and follow-up
+
+Service pages identify their service automatically; homepage/contact enquiries let visitors select an available service. Name, Indian mobile, state, city/district, message and explicit contact consent are required; email is optional. Public success gives a reference without lead details. The form rejects unavailable services, mismatched/arbitrary source paths, spam honeypots, rapid attempts and duplicates. Visitors should keep the reference and contact the company for follow-up or correction/removal; there is no public lookup portal.
+
+Open `/admin/enquiries`. Search name/reference/mobile/email/city; filter service/status and UTC date range, then Apply filters. Clear filters resets the search; records sort newest first and paginate 20. Follow-up dashboard cards open the corresponding filtered list. Detail includes necessary contact links, originating service/source and consent evidence.
+
+Choose NEW, CONTACTED, FOLLOW_UP, QUALIFIED, CONVERTED or CLOSED and optionally add a status note. Changes retain previous/new status, administrator and server time. CLOSED can reopen to NEW; states do not imply payments or revenue. Stale edits return a conflict: reload before making a decision. Add internal notes separately; they are append-only and never public. Include only follow-up information needed by authorized administrators.
+
+Lead reads, status changes and note additions are audited with safe summaries. All lead APIs require an administrator; logout removes access. Notes/visitor text are escaped as plain text. Automated reminders, assignments, scheduled follow-up dates, exports, retention/purge UI and deletion of individual notes are deferred. The operator must establish a retention policy and a controlled private procedure for correction/removal before production use.

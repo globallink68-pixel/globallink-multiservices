@@ -193,11 +193,15 @@ it("shows useful invalid login feedback", async () => {
   );
   expect(screen.getByLabelText("Password")).toHaveValue("");
 });
-it("shows real dashboard counts without enquiry or financial statistics", async () => {
+it("preserves real CMS counts without invented financial statistics", async () => {
   open();
   expect(await screen.findByText("32")).toBeInTheDocument();
   expect(screen.getByText("Drafts")).toBeInTheDocument();
-  expect(screen.queryByText(/Revenue|Enquiries/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Revenue/)).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Enquiries" })).toHaveAttribute(
+    "href",
+    "/admin/enquiries",
+  );
 });
 it("filters services and requires deliberate publication", async () => {
   open("/admin/services");
@@ -284,11 +288,18 @@ it("allows blank lines while editing provider requirements and omits them on sav
   await screen.findByLabelText("Service title");
   await u.click(screen.getByRole("button", { name: "Providers" }));
   await u.click(screen.getByRole("button", { name: "Add row" }));
-  await u.type(screen.getByLabelText("Eligibility (one requirement per line)"), " First requirement \n\nSecond requirement\n");
+  await u.type(
+    screen.getByLabelText("Eligibility (one requirement per line)"),
+    " First requirement \n\nSecond requirement\n",
+  );
   await u.click(screen.getByRole("button", { name: "Save service" }));
   await screen.findByText(/Service saved/);
-  const call = fetchMock.mock.calls.find((c) => c[0] === "/api/admin/services/1" && c[1]?.method === "PUT");
-  expect(JSON.parse(call?.[1].body).providers[0].eligibility_overrides).toEqual(["First requirement", "Second requirement"]);
+  const call = fetchMock.mock.calls.find(
+    (c) => c[0] === "/api/admin/services/1" && c[1]?.method === "PUT",
+  );
+  expect(JSON.parse(call?.[1].body).providers[0].eligibility_overrides).toEqual(
+    ["First requirement", "Second requirement"],
+  );
 });
 it("category management edits an active category with locked slug", async () => {
   open("/admin/categories");

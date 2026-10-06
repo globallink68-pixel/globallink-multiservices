@@ -16,6 +16,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { adminApi, AdminError } from "./api";
+import { EnquiryList, EnquiryDetail } from "./Enquiries";
 import "./admin.css";
 type Row = Record<string, any>;
 type User = { id: number; name: string };
@@ -28,6 +29,7 @@ const Confirmation = createContext<(message: string) => Promise<boolean>>(
 );
 const links = [
   ["dashboard", "Overview"],
+  ["enquiries", "Enquiries"],
   ["services", "Services"],
   ["categories", "Categories"],
   ["providers", "Providers"],
@@ -296,6 +298,8 @@ function Protected() {
           <Routes>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="enquiries" element={<EnquiryList />} />
+            <Route path="enquiries/:reference" element={<EnquiryDetail />} />
             <Route path="services" element={<ServiceList />} />
             <Route path="services/new" element={<ServiceEditor />} />
             <Route path="services/:id/edit" element={<ServiceEditor />} />
@@ -375,6 +379,29 @@ function Dashboard() {
               </article>
             ))}
           </div>
+          {data.lead_counts && (
+            <>
+              <h2>Lead follow-up</h2>
+              <div className="admin-metrics lead-cards">
+                {[
+                  ["NEW", "New enquiries"],
+                  ["FOLLOW_UP", "Follow-up"],
+                  ["QUALIFIED", "Qualified"],
+                  ["CONVERTED", "Converted"],
+                ].map(([status, title]) => (
+                  <article key={status}>
+                    <Link
+                      to={"/admin/enquiries?status=" + status}
+                      aria-label={title + " " + data.lead_counts[status]}
+                    >
+                      <span>{title}</span>
+                      <strong>{data.lead_counts[status]}</strong>
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
           <div className="admin-two">
             <section className="admin-panel">
               <h2>Recent content changes</h2>
@@ -1595,6 +1622,7 @@ function Audit() {
               "settings",
               "administrator",
               "media",
+              "enquiry",
             ].map((v) => (
               <option key={v}>{v}</option>
             ))}
@@ -1619,6 +1647,9 @@ function Audit() {
               "login",
               "logout",
               "uploaded",
+              "viewed",
+              "status_changed",
+              "note_added",
             ].map((v) => (
               <option key={v}>{v}</option>
             ))}

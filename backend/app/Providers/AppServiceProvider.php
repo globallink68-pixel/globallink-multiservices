@@ -23,5 +23,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('public-catalogue', fn (Request $request) => Limit::perMinute(90)->by($request->ip()));
+        RateLimiter::for('enquiries', fn (Request $request) => [
+            Limit::perMinute(5)->by('enquiry-minute:'.$request->ip()),
+            Limit::perHour(20)->by('enquiry-hour:'.$request->ip()),
+        ]);
     }
 }

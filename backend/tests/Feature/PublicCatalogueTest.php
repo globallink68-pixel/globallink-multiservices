@@ -108,10 +108,12 @@ class PublicCatalogueTest extends TestCase
         $this->getJson('/api/services/retailer-id')->assertOk()->assertDontSee('GPS Map Camera picture');
     }
 
-    public function test_api_is_read_only_and_no_future_admin_chat_or_enquiry_route_exists(): void
+    public function test_catalogue_is_read_only_and_future_chat_remains_absent(): void
     {
         foreach (['/api/services', '/api/chat', '/api/enquiries', '/api/admin/services'] as $path) {
-            $this->postJson($path, [])->assertStatus($path === '/api/services' ? 405 : ($path === '/api/admin/services' ? 401 : 404));
+            $this->postJson($path, [])->assertStatus(match ($path) {
+                '/api/services' => 405, '/api/admin/services' => 401, '/api/enquiries' => 422, default => 404,
+            });
         }
         $this->assertDatabaseCount('users', 0);
     }

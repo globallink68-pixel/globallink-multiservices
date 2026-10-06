@@ -1,4 +1,4 @@
-# Database — Phases 1–2
+# Database — Phases 1–3
 
 ## Isolation
 
@@ -8,7 +8,7 @@ Tests enforce the database name and port before RefreshDatabase can execute. Nev
 
 ## Migrations and tables
 
-Five migrations create 20 tables including the migrations ledger. Three framework migrations create users, password_reset_tokens, sessions, cache, cache_locks, jobs, job_batches and failed_jobs. No admin user is seeded.
+Six migrations create 23 tables including the migrations ledger. Three framework migrations create users, password_reset_tokens, sessions, cache, cache_locks, jobs, job_batches and failed_jobs. No admin user is seeded.
 
 The catalogue migration creates nine domain tables:
 
@@ -24,7 +24,17 @@ The catalogue migration creates nine domain tables:
 | faqs | Global or service FAQ; service FK cascade; active/order index |
 | site_settings | Unique key, text value and public flag; API additionally enforces a fixed safe-key allowlist |
 
-Typed items avoid seven identical child tables while retaining independently editable records. Detailed processing information uses ordered sections; provider processing notes are separate. Enquiries/enquiry_notes and chat_sessions/chat_messages remain deferred.
+Typed items avoid seven identical child tables while retaining independently editable records. Detailed processing information uses ordered sections; provider processing notes are separate. Chat sessions/messages remain deferred.
+
+Phase 3 migration `2026_10_06_132218_create_enquiry_management_tables` adds:
+
+| Table | Responsibility / integrity |
+| --- | --- |
+| enquiries | Unique GL reference, restricted service FK, bounded contact/location fields, message/source path, consent time/version, current status, duplicate HMAC, timestamps; status/date and service/date indexes |
+| enquiry_status_history | Cascading enquiry FK; previous/current status, nullable administrator FK, optional note, server timestamp; enquiry/id index |
+| enquiry_notes | Cascading enquiry FK; nullable administrator FK, plain-text body, server timestamp; enquiry/id index |
+
+Service deletion is restricted while leads reference it. Unpublication does not remove historical leads. Deleted administrator FKs become null, retaining history/note text and time. New enquiries create the initial NEW history row atomically; row locks protect subsequent status/history writes. Fingerprints contain keyed hashes, not raw IP/browser data. Contact information is stored only as needed for follow-up and excluded from public DTOs/audits. No retention/deletion UI or automatic purge is introduced. Guarded test-only rebuild/seed and Phase 3 rollback/reapply passed with all six migrations.
 
 Phase 2 migration `2026_10_06_082727_extend_catalogue_for_admin_cms` adds default-false users.is_admin, category SEO, service icon_path/cta_text, content-item is_required, fee is_active and provider-detail notes/disclaimer. It creates audit_logs (nullable administrator FK, fixed summary, entity/time index) and media_assets (unique UUID/path, MIME/size, administrator FK). Administrator FKs become null if the user is removed. No catalogue row is deleted by migration. down() removes only Phase 2 additions. Fresh+seed and Phase 2 rollback/reapply were verified solely on the guarded test database.
 

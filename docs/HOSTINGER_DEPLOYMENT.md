@@ -1,6 +1,6 @@
 # Hostinger deployment strategy — no deployment performed
 
-This is the Phases 1–2 architecture plan. Verify the selected plan's PHP, extensions, MySQL, document roots and shell availability before Phase 7. The lock requires PHP 8.4+ and GD with JPEG/PNG/WebP support. PHP 8.3 or absent GD requires a separately reviewed change and full regression.
+This is the Phases 1–3 architecture plan. Verify the selected plan's PHP, extensions, MySQL, document roots and shell availability before Phase 7. The lock requires PHP 8.4+ and GD with JPEG/PNG/WebP support. PHP 8.3 or absent GD requires a separately reviewed change and full regression.
 
 ## Intended production layout
 
@@ -21,6 +21,10 @@ Keep encrypted database sessions, HttpOnly/Secure/SameSite=Lax cookies and an ap
 Raster media lives in `backend/storage/app/private/cms` under UUID filenames. Back up this directory with the database. Never expose the private disk or backend as static content. `/api/media/{uuid}` permits only public references; `/api/admin/media/{uuid}` requires an administrator. No storage:link is needed. A reviewed reference-aware cleanup procedure is needed for unused media; a pruning UI is deferred.
 
 Phase 7 must validate rewrite behavior, public/private paths, HTTPS, headers, production errors, backups/restore, migration permissions, deployment rollback, secrets and end-to-end acceptance. No Hostinger account was accessed, no domain was changed and nothing was uploaded in this phase.
+
+Phase 3 requires the same-origin `/api/enquiries/session` and POST `/api/enquiries` routes to retain Laravel web session/CSRF handling. `/api/admin/enquiries/*` must reach protected web routes, never a static/public response cache. Preserve no-store headers for contact data. The file-cache limiter and atomic mobile lock assume one PHP host sharing the same writable cache filesystem; a multi-host setup needs separately validated shared locking/rate limiting. No paid infrastructure, worker or external CAPTCHA is required.
+
+Back up the dedicated database privately, including enquiry/history/note tables. Decide retention and controlled correction/removal procedures, protect backups containing contact data, and validate HTTPS/cookies/CSRF and spam thresholds under real traffic before production. The incremental migration preserves CMS tables; migrate:fresh remains forbidden on production.
 
 ## SEO roadmap
 
