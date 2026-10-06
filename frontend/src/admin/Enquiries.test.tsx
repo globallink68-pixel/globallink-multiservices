@@ -235,3 +235,22 @@ it("logout removes protected contact and detail display", async () => {
   await screen.findByRole("heading", { name: "Welcome back." });
   expect(screen.queryByText("9000000000")).not.toBeInTheDocument();
 });
+
+it("distinguishes AI source in CRM and sends the trusted source filter", async () => {
+  current = { ...lead, lead_source: "AI_ASSISTANT" } as typeof current;
+  open();
+  await screen.findByText("Fictional visitor");
+  expect(
+    screen.getByRole("cell", { name: "AI assistant" }),
+  ).toBeInTheDocument();
+  const u = userEvent.setup();
+  await u.selectOptions(screen.getByLabelText("Lead source"), "AI_ASSISTANT");
+  await u.click(screen.getByRole("button", { name: "Apply filters" }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some((c) =>
+        String(c[0]).includes("lead_source=AI_ASSISTANT"),
+      ),
+    ).toBe(true),
+  );
+});

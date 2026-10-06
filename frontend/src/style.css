@@ -1772,6 +1772,110 @@ details[open] .faq-plus {
   z-index: 90;
   font-size: 0.9rem;
 }
+.chat-start-qualification,
+.chat-contact-offer button,
+.lead-qualification button {
+  border: 1px solid #b4c9da;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  font: inherit;
+  color: #143f64;
+  background: #eef5fc;
+  cursor: pointer;
+}
+.chat-start-qualification {
+  margin: 0 1rem 0.8rem;
+}
+.chat-contact-offer {
+  background: #eef5fc;
+  padding: 0.7rem;
+  border-radius: 8px;
+}
+.lead-qualification {
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.lead-qualification h3 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+.lead-qualification .qualification-privacy {
+  font-size: 0.76rem;
+  margin: 0.5rem 0 0.8rem;
+}
+.lead-qualification label:not(.qualification-consent):not(.enquiry-trap) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.86rem;
+  font-weight: 650;
+  margin-bottom: 0.7rem;
+}
+.lead-qualification input:not([type="checkbox"]),
+.lead-qualification textarea,
+.lead-qualification select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem;
+  border: 1px solid #afc2d4;
+  border-radius: 8px;
+  font: inherit;
+  color: #183e5c;
+  background: white;
+}
+.qualification-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+.qualification-consent {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 0.7rem 0;
+}
+.qualification-consent input {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+.qualification-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.lead-qualification button[type="submit"] {
+  background: #143f64;
+  color: white;
+}
+.lead-qualification button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.qualification-cancel {
+  margin-top: 0.7rem;
+}
+.qualification-summary {
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.qualification-summary dt {
+  font-weight: 700;
+  margin-top: 0.6rem;
+}
+.qualification-summary dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .lead-qualification input:not([type="checkbox"]),
+  .lead-qualification textarea,
+  .lead-qualification select {
+    font-size: 16px;
+  }
+}
 .chat-launcher {
   display: flex;
   align-items: center;

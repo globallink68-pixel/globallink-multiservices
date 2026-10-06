@@ -1,4 +1,4 @@
-# Database — Phases 1–3
+# Database — Phases 1–5
 
 ## Isolation
 
@@ -8,7 +8,7 @@ Tests enforce the database name and port before RefreshDatabase can execute. Nev
 
 ## Migrations and tables
 
-Six migrations create 23 tables including the migrations ledger. Three framework migrations create users, password_reset_tokens, sessions, cache, cache_locks, jobs, job_batches and failed_jobs. No admin user is seeded.
+Seven migrations retain 23 tables including the migrations ledger. Three framework migrations create users, password_reset_tokens, sessions, cache, cache_locks, jobs, job_batches and failed_jobs. No admin user is seeded.
 
 The catalogue migration creates nine domain tables:
 
@@ -53,3 +53,8 @@ Retailer and Distributor each have 10 separate document records: current locatio
 ## Seeding policy
 
 CatalogueSeeder inserts missing records using stable slugs/codes/labels and preserves existing edited content. Re-running it passes an idempotency test, but intentionally deleted starter records may be recreated. Use seed only for initial installation/test fixtures. Future CMS changes and upgrades should use migrations or deliberate admin actions, not routine reseeding. Only the first setup migration/seed is appropriate on the dedicated empty development database.
+
+
+## Phase 5 source migration
+
+`2026_10_06_144624_add_lead_source_to_enquiries_table` adds indexed VARCHAR(20) lead_source, default WEBSITE_FORM. Server writes allow only WEBSITE_FORM or AI_ASSISTANT. Existing enquiry/history/note schema and foreign keys remain intact; there are no chat/prompt/review tables. Review state contains hashes only in short-lived private cache. Guarded test-only rebuild, rollback of this column and reapply passed; a legacy enquiry retained its data and received WEBSITE_FORM. Development received only the incremental migration.

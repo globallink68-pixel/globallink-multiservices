@@ -32,5 +32,10 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(40)->by('chat-ip-hour:'.$request->ip()),
             Limit::perMinute(6)->by('chat-session:'.hash('sha256', $request->session()->getId())),
         ]);
+        RateLimiter::for('assistant-review', fn (Request $request) => [
+            Limit::perMinute(10)->by('assistant-review-ip:'.$request->ip()),
+            Limit::perHour(40)->by('assistant-review-hour:'.$request->ip()),
+            Limit::perMinute(6)->by('assistant-review-session:'.hash('sha256', $request->session()->getId())),
+        ]);
     }
 }

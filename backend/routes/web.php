@@ -4,11 +4,15 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CmsController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\AssistantEnquiryController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\EnquiryController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => response()->json(['name' => 'Global Link Multiservice API', 'phase' => 4]));
+Route::get('/', fn () => response()->json(['name' => 'Global Link Multiservice API', 'phase' => 5]));
+Route::post('/api/chat/enquiry/review', [AssistantEnquiryController::class, 'review'])->middleware('throttle:assistant-review')->name('assistant-enquiry.review');
+Route::post('/api/chat/enquiry', [AssistantEnquiryController::class, 'store'])->middleware('throttle:enquiries')->name('assistant-enquiry.submit');
+Route::post('/api/chat/enquiry/cancel', [AssistantEnquiryController::class, 'cancel'])->middleware('throttle:assistant-review');
 Route::get('/api/chat/session', [ChatController::class, 'session'])->middleware('throttle:30,1');
 Route::post('/api/chat', [ChatController::class, 'store'])->middleware('throttle:chat');
 Route::get('/api/enquiries/session', [EnquiryController::class, 'session'])->middleware('throttle:30,1');

@@ -308,3 +308,35 @@ it("client timeout aborts a stalled request and retains service enquiry handoff"
     vi.useRealTimers();
   }
 });
+
+it("offers controlled qualification with CMS service and sends no lead on chat intent alone", async () => {
+  fetchMock.mockImplementation((url: string) =>
+    url.endsWith("/session")
+      ? response({ csrf_token: "qa" })
+      : url === "/api/services"
+        ? response([{ id: 1, slug: "retailer-id", title: "Retailer ID" }])
+        : response({
+            ...grounded,
+            qualification: {
+              offered: true,
+              service: { slug: "retailer-id", title: "Retailer ID" },
+            },
+          }),
+  );
+  open();
+  const u = await ask("I want to apply for Retailer ID");
+  await u.click(
+    await screen.findByRole("button", { name: "Yes, request team contact" }),
+  );
+  expect(
+    await screen.findByRole("option", { name: "Retailer ID" }),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Relevant service")).toHaveValue("1");
+  expect(
+    fetchMock.mock.calls.some((c) => String(c[0]).includes("/chat/enquiry")),
+  ).toBe(false);
+  await u.click(
+    screen.getByRole("button", { name: "Cancel callback request" }),
+  );
+  expect(screen.getByLabelText("Your question")).toBeInTheDocument();
+});

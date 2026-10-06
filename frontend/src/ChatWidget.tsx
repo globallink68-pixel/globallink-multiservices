@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
+import LeadQualification, { type ServiceInterest } from "./LeadQualification";
 
 type Fact = { label: string; text: string; source: string };
 type Reply = {
@@ -7,6 +8,7 @@ type Reply = {
   facts: Fact[];
   handoff: { label: string; url: string };
   mode: string;
+  qualification?: { offered: boolean; service: ServiceInterest };
 };
 type Turn = { question: string; reply: Reply };
 const fallback: Reply = {
@@ -29,6 +31,15 @@ export default function ChatWidget() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [qualification, setQualification] = useState<
+    ServiceInterest | undefined
+  >();
+  const [qualificationBusy, setQualificationBusy] = useState(false);
+  function closeAssistant() {
+    if (qualificationBusy) return;
+    setQualification(undefined);
+    setOpen(false);
+  }
   const input = useRef<HTMLTextAreaElement>(null);
   const lastReply = useRef<HTMLDivElement>(null);
   const pending = useRef<AbortController | null>(null);
@@ -36,11 +47,14 @@ export default function ChatWidget() {
     if (open) input.current?.focus();
     if (!open) return;
     function escape(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape" && !qualificationBusy) {
+        setQualification(undefined);
+        setOpen(false);
+      }
     }
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
-  }, [open]);
+  }, [open, qualificationBusy]);
   useEffect(() => {
     lastReply.current?.scrollIntoView?.({ block: "nearest" });
   }, [turns, busy]);
@@ -144,7 +158,7 @@ export default function ChatWidget() {
           className="chat-panel"
           aria-label="Global Link customer assistant"
           onKeyDown={(e) => {
-            if (e.key === "Escape") setOpen(false);
+            if (e.key === "Escape") closeAssistant();
           }}
         >
           <header className="chat-header">
@@ -155,107 +169,156 @@ export default function ChatWidget() {
             <button
               type="button"
               aria-label="Close assistant"
-              onClick={() => setOpen(false)}
+              disabled={qualificationBusy}
+              onClick={closeAssistant}
             >
               ×
             </button>
           </header>
-          <div
-            className="chat-transcript"
-            role="log"
-            aria-live="polite"
-            aria-relevant="additions"
-          >
-            {!turns.length && (
-              <p>
-                Ask about a service, documents, eligibility, fees or providers.
-                When details are unavailable, we’ll help you contact the team.
-              </p>
-            )}
-            {turns.map((turn, i) => (
+          {qualification !== undefined ? (
+            <LeadQualification
+              interest={qualification}
+              onCancel={() => setQualification(undefined)}
+              onBusyChange={setQualificationBusy}
+            />
+          ) : (
+            <>
               <div
-                className="chat-turn"
-                key={i}
-                ref={i === turns.length - 1 ? lastReply : undefined}
+                className="chat-transcript"
+                role="log"
+                aria-live="polite"
+                aria-relevant="additions"
               >
-                <p className="chat-question">
-                  <strong>You</strong>
-                  {turn.question}
-                </p>
-                <div className="chat-reply">
-                  <strong>Global Link assistant</strong>
-                  <p>{turn.reply.answer}</p>
-                  {turn.reply.facts.map((fact, j) => (
-                    <article key={j}>
-                      <h4>{fact.label}</h4>
-                      <p>{fact.text}</p>
+                {!turns.length && (
+                  <p>
+                    Ask about a service, documents, eligibility, fees or
+                    providers. When details are unavailable, we’ll help you
+                    contact the team.
+                  </p>
+                )}
+                {turns.map((turn, i) => (
+                  <div
+                    className="chat-turn"
+                    key={i}
+                    ref={i === turns.length - 1 ? lastReply : undefined}
+                  >
+                    <p className="chat-question">
+                      <strong>You</strong>
+                      {turn.question}
+                    </p>
+                    <div className="chat-reply">
+                      <strong>Global Link assistant</strong>
+                      <p>{turn.reply.answer}</p>
+                      {turn.reply.qualification?.offered && (
+                        <div className="chat-contact-offer">
+                          <p>
+                            Would you like our team to contact you
+                            {turn.reply.qualification.service
+                              ? " about " +
+                                turn.reply.qualification.service.title
+                              : " about a service"}
+                            ?
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setQualification(
+                                turn.reply.qualification?.service ?? null,
+                              )
+                            }
+                          >
+                            Yes, request team contact
+                          </button>
+                        </div>
+                      )}
+                      {turn.reply.facts.map((fact, j) => (
+                        <article key={j}>
+                          <h4>{fact.label}</h4>
+                          <p>{fact.text}</p>
+                          <Link
+                            to={safeLink(fact.source)}
+                            onClick={() => setOpen(false)}
+                          >
+                            View source
+                          </Link>
+                        </article>
+                      ))}
                       <Link
-                        to={safeLink(fact.source)}
+                        className="chat-handoff"
+                        to={safeLink(turn.reply.handoff.url)}
                         onClick={() => setOpen(false)}
                       >
-                        View source
+                        Send an enquiry
                       </Link>
-                    </article>
-                  ))}
-                  <Link
-                    className="chat-handoff"
-                    to={safeLink(turn.reply.handoff.url)}
-                    onClick={() => setOpen(false)}
-                  >
-                    Send an enquiry
-                  </Link>
-                </div>
+                    </div>
+                  </div>
+                ))}
+                {busy && <p role="status">Checking published information…</p>}
               </div>
-            ))}
-            {busy && <p role="status">Checking published information…</p>}
-          </div>
-          <form onSubmit={submit} className="chat-form">
-            <p className="chat-privacy">
-              AI may select published records using Google Gemini. Don’t share
-              identity documents, bank details, passwords or personal contact
-              details. Chat isn’t saved by this website.
-            </p>
-            {error && (
-              <p role="alert">
-                {error}{" "}
-                <Link to="/#contact" onClick={() => setOpen(false)}>
-                  Contact the team
-                </Link>
-              </p>
-            )}
-            <label htmlFor="chat-question">Your question</label>
-            <textarea
-              ref={input}
-              id="chat-question"
-              required
-              minLength={3}
-              maxLength={500}
-              rows={2}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              disabled={busy}
-            />
-            <div className="chat-controls">
+              <form onSubmit={submit} className="chat-form">
+                <p className="chat-privacy">
+                  AI may select published records using Google Gemini. Don’t
+                  share identity documents, bank details, passwords or personal
+                  contact details. Chat isn’t saved by this website.
+                </p>
+                {error && (
+                  <p role="alert">
+                    {error}{" "}
+                    <Link to="/#contact" onClick={() => setOpen(false)}>
+                      Contact the team
+                    </Link>
+                  </p>
+                )}
+                <label htmlFor="chat-question">Your question</label>
+                <textarea
+                  ref={input}
+                  id="chat-question"
+                  required
+                  minLength={3}
+                  maxLength={500}
+                  rows={2}
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  disabled={busy}
+                />
+                <div className="chat-controls">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setTurns([]);
+                      setError("");
+                      setQuestion("");
+                      input.current?.focus();
+                    }}
+                  >
+                    Clear chat
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={busy || question.trim().length < 3}
+                  >
+                    {busy ? "Please wait…" : "Ask assistant"}
+                  </button>
+                </div>
+              </form>
               <button
                 type="button"
-                disabled={busy}
+                className="chat-start-qualification"
                 onClick={() => {
-                  setTurns([]);
-                  setError("");
-                  setQuestion("");
-                  input.current?.focus();
+                  const known = turns.at(-1)?.reply.qualification?.service;
+                  const slug = location.pathname.match(
+                    /^\/services\/([a-z0-9-]+)$/,
+                  )?.[1];
+                  setQualification(
+                    known ?? (slug ? { slug, title: "this service" } : null),
+                  );
                 }}
               >
-                Clear chat
+                Request team contact
               </button>
-              <button
-                type="submit"
-                disabled={busy || question.trim().length < 3}
-              >
-                {busy ? "Please wait…" : "Ask assistant"}
-              </button>
-            </div>
-          </form>
+            </>
+          )}
         </section>
       )}
       <button
@@ -265,7 +328,8 @@ export default function ChatWidget() {
         aria-label={
           open ? "Hide customer assistant" : "Open customer assistant"
         }
-        onClick={() => setOpen(!open)}
+        disabled={qualificationBusy}
+        onClick={() => (open ? closeAssistant() : setOpen(true))}
       >
         {" "}
         <span aria-hidden="true">✦</span>{" "}

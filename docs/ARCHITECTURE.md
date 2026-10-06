@@ -46,7 +46,7 @@ Public components consume CMS images, CTA text, optional-document flags, provide
 6: comprehensive security, SEO, accessibility and performance QA.
 7: verified Hostinger deployment package, migration/backup/restore procedure and HTTPS acceptance.
 
-Phase 4 is implemented; Phase 5 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
+Phase 5 is implemented; Phase 6 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
 
 ## Customer assistant
 
@@ -67,3 +67,14 @@ Public responses contain only a generated GL-prefixed ULID reference and acknowl
 Administrator list/detail/status/note endpoints reuse RequireAdministrator and web CSRF. Lists paginate 20, sort newest first and filter search/service/status/inclusive UTC dates. Search uses bound SQL with escaped wildcard characters. Detail excludes database IDs/fingerprint but includes necessary contact, service/source, consent evidence and append-only history/notes. Status writes lock the row and require expected_status to reject stale edits. All six allowed states, including reopening, are manual administrative decisions. Every changed status retains old/new status, actor/time and optional note. Notes are separate append-only rows. Read/status/note audits use fixed safe summaries without contact or message text.
 
 Dashboard lead counts link to authorized filtered lists; no revenue is inferred. React escapes visitor/internal text and moves focus/viewport to public confirmation after submission. Single-host file cache/locks suit the planned PHP/MySQL deployment. Retention, multi-host spam controls, notifications, follow-up scheduling and exports are not implemented.
+
+
+## Controlled conversational qualification (Phase 5)
+
+Laravel adds a deterministic interest offer to chat replies using the retrieved published service context. Gemini's existing fact-ID-only contract stays unchanged. A separate React qualification component holds bounded contact fields in memory, outside chat turns/history. Visitors choose an available CMS service, give consent, inspect a server-validated summary and explicitly confirm before any enquiry is written.
+
+Same-origin CSRF-protected POST `/api/chat/enquiry/review` validates through a child of StoreEnquiryRequest and derives the canonical service source path. It returns an opaque 40-character review token valid for ten minutes. Private file cache stores only payload HMAC/session hashes, never contact values or chat. One active review per session; replacement, cancellation or expiry revokes it. POST `/api/chat/enquiry/cancel` revokes the caller's review. Review/cancellation limits are 6/minute/session, 10/minute/IP and 40/hour/IP.
+
+POST `/api/chat/enquiry` requires accepted consent, explicit confirmation, matching normalized fields and the same cookie session. A token lock serializes confirmation; retries of the same accepted review return the same public reference for ten minutes. The server calls EnquiryWorkflow with the fixed AI_ASSISTANT source, reusing service revalidation, mobile/IP limits, duplicate protection and atomic NEW/history/consent creation. No Gemini dependency exists on these three routes. Invalid or changed reviews return a safe conflict and require a new review. Browser state is cleared after success/cancel/unmount; no local-storage persistence or full conversation is added.
+
+The incremental migration adds indexed enquiries.lead_source, default WEBSITE_FORM for existing rows and ordinary form submissions. Admin list/detail expose a source label; the existing authorized list supports a two-value source filter. Lead reads/status/notes retain their existing authorization and safe audits. The source records the controlled assistant UI channel, not proof that a live Gemini call occurred. No model tools, arbitrary SQL or new lead creation business logic were added.

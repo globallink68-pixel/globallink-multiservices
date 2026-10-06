@@ -23,6 +23,7 @@ type Lead = {
   service_id: number;
   service_title: string;
   service_slug: string;
+  lead_source?: string;
 };
 type Detail = Lead & {
   message: string;
@@ -85,6 +86,7 @@ export function EnquiryList() {
     search: params.get("search") ?? "",
     service_id: params.get("service_id") ?? "",
     status: params.get("status") ?? "",
+    lead_source: params.get("lead_source") ?? "",
     from: params.get("from") ?? "",
     to: params.get("to") ?? "",
   });
@@ -164,6 +166,19 @@ export function EnquiryList() {
           />
         </label>
         <label>
+          Lead source
+          <select
+            value={filters.lead_source}
+            onChange={(e) =>
+              setFilters({ ...filters, lead_source: e.target.value })
+            }
+          >
+            <option value="">All sources</option>
+            <option value="WEBSITE_FORM">Website form</option>
+            <option value="AI_ASSISTANT">AI assistant</option>
+          </select>
+        </label>
+        <label>
           To date (UTC)
           <input
             type="date"
@@ -179,6 +194,7 @@ export function EnquiryList() {
               search: "",
               service_id: "",
               status: "",
+              lead_source: "",
               from: "",
               to: "",
             });
@@ -201,6 +217,7 @@ export function EnquiryList() {
                   <th>Service</th>
                   <th>Contact</th>
                   <th>Status</th>
+                  <th>Source</th>
                   <th>Submitted</th>
                 </tr>
               </thead>
@@ -230,6 +247,11 @@ export function EnquiryList() {
                     </td>
                     <td>
                       <span className="admin-badge">{label(lead.status)}</span>
+                    </td>
+                    <td>
+                      {lead.lead_source === "AI_ASSISTANT"
+                        ? "AI assistant"
+                        : "Website form"}
                     </td>
                     <td>{lead.created_at}</td>
                   </tr>
@@ -347,7 +369,12 @@ export function EnquiryDetail() {
                 {data.city}, {data.state}
               </dd>
               <dt>Source</dt>
-              <dd>{data.source_path}</dd>
+              <dd>
+                {data.lead_source === "AI_ASSISTANT"
+                  ? "AI assistant"
+                  : "Website form"}{" "}
+                · {data.source_path}
+              </dd>
               <dt>Submitted (UTC)</dt>
               <dd>{data.created_at}</dd>
               <dt>Consent</dt>

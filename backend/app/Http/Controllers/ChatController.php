@@ -14,7 +14,10 @@ class ChatController extends Controller
         $values = $request->validated();
         $context = $retrieval->retrieve($values['question'], $values['history'] ?? [], $values['service_slug'] ?? null);
 
-        return response()->json(['data' => $assistant->answer($values['question'], $context)]);
+        $answer = $assistant->answer($values['question'], $context);
+        $answer['qualification'] = ['offered' => (bool) preg_match('/interested|apply|application|callback|contact me|call me|enquir|sign up|register|want/i', $values['question']), 'service' => count($context['services']) === 1 ? $context['services'][0] : null];
+
+        return response()->json(['data' => $answer]);
     }
 
     public function session(): JsonResponse

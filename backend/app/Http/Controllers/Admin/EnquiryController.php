@@ -20,10 +20,11 @@ class EnquiryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        abort_if(array_diff(array_keys($request->query()), ['search', 'service_id', 'status', 'from', 'to', 'page']), 422, 'Unknown enquiry filter.');
+        abort_if(array_diff(array_keys($request->query()), ['search', 'service_id', 'status', 'from', 'to', 'page', 'lead_source']), 422, 'Unknown enquiry filter.');
         $values = $request->validate([
             'search' => 'sometimes|string|max:120', 'service_id' => 'sometimes|integer|exists:services,id',
             'status' => ['sometimes', Rule::in(EnquiryWorkflow::STATUSES)], 'from' => 'sometimes|date_format:Y-m-d',
+            'lead_source' => 'sometimes|in:WEBSITE_FORM,AI_ASSISTANT',
             'to' => 'sometimes|date_format:Y-m-d'.($request->filled('from') ? '|after_or_equal:from' : ''), 'page' => 'sometimes|integer|min:1|max:100000',
         ]);
         $query = $this->query();
@@ -35,7 +36,7 @@ class EnquiryController extends Controller
                 }
             });
         }
-        foreach (['status', 'service_id'] as $filter) {
+        foreach (['status', 'service_id', 'lead_source'] as $filter) {
             if (isset($values[$filter])) {
                 $query->where('e.'.$filter, $values[$filter]);
             }
@@ -48,7 +49,7 @@ class EnquiryController extends Controller
         }
 
         return response()->json(['data' => $query->orderByDesc('e.created_at')->orderByDesc('e.id')->paginate(20, [
-            'e.reference', 'e.name', 'e.mobile', 'e.email', 'e.state', 'e.city', 'e.status', 'e.created_at',
+            'e.reference', 'e.name', 'e.mobile', 'e.email', 'e.state', 'e.city', 'e.status', 'e.created_at', 'e.lead_source',
             'e.service_id', 's.title as service_title', 's.slug as service_slug',
         ], 'page', $values['page'] ?? 1)]);
     }
@@ -56,7 +57,7 @@ class EnquiryController extends Controller
     public function show(string $reference): JsonResponse
     {
         $enquiry = $this->query()->where('e.reference', $reference)->first([
-            'e.id', 'e.reference', 'e.name', 'e.mobile', 'e.email', 'e.state', 'e.city', 'e.message', 'e.source_path', 'e.status',
+            'e.id', 'e.reference', 'e.name', 'e.mobile', 'e.email', 'e.state', 'e.city', 'e.message', 'e.source_path', 'e.status', 'e.lead_source',
             'e.created_at', 'e.updated_at', 'e.consented_at', 'e.consent_version', 'e.service_id', 's.title as service_title', 's.slug as service_slug',
         ]);
         abort_unless($enquiry, 404);
