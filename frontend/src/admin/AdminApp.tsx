@@ -2,6 +2,8 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
+  useRef,
   useState,
   type ReactNode,
   type FormEvent,
@@ -18,6 +20,7 @@ import {
 import { adminApi, AdminError } from "./api";
 import { EnquiryList, EnquiryDetail } from "./Enquiries";
 import "./admin.css";
+import FormFeedback from "./FormFeedback";
 type Row = Record<string, any>;
 type User = { id: number; name: string };
 const Auth = createContext<{
@@ -41,14 +44,10 @@ function ErrorBox({ error }: { error: unknown }) {
   if (!error) return null;
   const e = error as AdminError;
   return (
-    <div className="admin-error" role="alert">
-      <strong>{e.message ?? "Something went wrong."}</strong>
-      {Object.entries(e.errors ?? {}).map(([key, values]) => (
-        <p key={key}>
-          {key.replaceAll("_", " ")}: {values.join(" ")}
-        </p>
-      ))}
-    </div>
+    <FormFeedback
+      message={e.message ?? "Something went wrong."}
+      errors={e.errors}
+    />
   );
 }
 export default function AdminApp() {
@@ -207,6 +206,7 @@ function Login() {
           Email
           <input
             type="email"
+            name="email"
             autoComplete="username"
             required
             value={email}
@@ -217,6 +217,7 @@ function Login() {
           Password
           <input
             type="password"
+            name="password"
             autoComplete="current-password"
             required
             value={password}
@@ -238,8 +239,25 @@ function Protected() {
   const { user, setUser } = useContext(Auth);
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [error, setError] = useState<unknown>();
   useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    document
+      .querySelector<HTMLElement>("#admin-main")
+      ?.focus({ preventScroll: true });
+  }, [location.pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        menuButton.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [open]);
   if (!user)
     return (
       <Navigate to="/admin/login" state={{ from: location.pathname }} replace />
@@ -249,7 +267,10 @@ function Protected() {
       <a className="admin-skip" href="#admin-main">
         Skip to workspace
       </a>
-      <aside className={open ? "admin-sidebar open" : "admin-sidebar"}>
+      <aside
+        id="admin-navigation"
+        className={open ? "admin-sidebar open" : "admin-sidebar"}
+      >
         <Link className="admin-wordmark" to="/admin/dashboard">
           GLOBAL LINK <span>CONTENT WORKSPACE</span>
         </Link>
@@ -268,6 +289,8 @@ function Protected() {
         <header className="admin-top">
           <button
             className="admin-menu"
+            ref={menuButton}
+            aria-controls="admin-navigation"
             aria-expanded={open}
             aria-label={
               open ? "Close admin navigation" : "Open admin navigation"
@@ -293,7 +316,7 @@ function Protected() {
             </button>
           </div>
         </header>
-        <main id="admin-main">
+        <main id="admin-main" tabIndex={-1}>
           <ErrorBox error={error} />
           <Routes>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -574,13 +597,14 @@ function Field({
   value: any;
   onChange: (v: any) => void;
 }) {
-  const id = "field-" + spec.key;
+  const id = useId();
   return (
     <label className={spec.type === "checkbox" ? "admin-check" : "admin-field"}>
       {spec.label}
       {spec.type === "checkbox" ? (
         <input
           id={id}
+          name={spec.key}
           aria-label={spec.label}
           type="checkbox"
           checked={!!value}
@@ -589,6 +613,7 @@ function Field({
       ) : spec.type === "textarea" || spec.type === "lines" ? (
         <textarea
           id={id}
+          name={spec.key}
           aria-label={spec.label}
           required={spec.required}
           rows={spec.type === "lines" ? 3 : 4}
@@ -604,6 +629,7 @@ function Field({
       ) : spec.type === "select" ? (
         <select
           id={id}
+          name={spec.key}
           aria-label={spec.label}
           required={spec.required}
           value={value ?? ""}
@@ -628,6 +654,7 @@ function Field({
       ) : (
         <input
           id={id}
+          name={spec.key}
           aria-label={spec.label}
           type={spec.type ?? "text"}
           required={spec.required}
@@ -1250,7 +1277,10 @@ function ServiceEditor() {
                   value={data.seo_description}
                   onChange={(v) => change("seo_description", v)}
                 />
-                <p>Share images / full SEO metadata remain Phase 6.</p>
+                <p>
+                  Public metadata uses these values, the service URL and its
+                  published hero image or site logo.
+                </p>
               </>
             )}
           </div>

@@ -12,6 +12,22 @@ import ChatWidget from "./ChatWidget";
 import EnquiryForm from "./EnquiryForm";
 import type { Service } from "./api";
 const fetchMock = vi.fn();
+it("Escape closes the assistant and restores keyboard focus to its launcher", async () => {
+  open();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Open customer assistant" }),
+  );
+  expect(
+    screen.getByRole("region", { name: "Global Link customer assistant" }),
+  ).toBeInTheDocument();
+  await userEvent.keyboard("{Escape}");
+  expect(
+    screen.queryByRole("region", { name: "Global Link customer assistant" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Open customer assistant" }),
+  ).toHaveFocus();
+});
 const grounded = {
   answer: "Published records only.",
   mode: "grounded",

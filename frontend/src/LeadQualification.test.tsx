@@ -196,6 +196,14 @@ it("shows server validation without claiming success", async () => {
     "Use a valid Indian mobile.",
   );
   expect(screen.queryByText("Enquiry received")).not.toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveFocus();
+  expect(screen.getByLabelText("Indian mobile")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByLabelText("Indian mobile")).toHaveAccessibleDescription(
+    /valid Indian mobile/,
+  );
 });
 it("rate and expired review failures retain safe retry and edit controls", async () => {
   fetchMock.mockImplementation((url: string) =>

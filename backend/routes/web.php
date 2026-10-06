@@ -7,9 +7,15 @@ use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\AssistantEnquiryController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\EnquiryController;
+use App\Http\Controllers\PublicPageController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => response()->json(['name' => 'Global Link Multiservice API', 'phase' => 5]));
+Route::get('/', [PublicPageController::class, 'show'])->name('page.home');
+Route::get('/services', [PublicPageController::class, 'show'])->name('page.catalogue');
+Route::get('/services/{slug}', [PublicPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('page.service');
+Route::get('/robots.txt', [PublicPageController::class, 'robots']);
+Route::get('/sitemap.xml', [PublicPageController::class, 'sitemap']);
+Route::get('/admin/{path?}', [PublicPageController::class, 'show'])->where('path', '.*');
 Route::post('/api/chat/enquiry/review', [AssistantEnquiryController::class, 'review'])->middleware('throttle:assistant-review')->name('assistant-enquiry.review');
 Route::post('/api/chat/enquiry', [AssistantEnquiryController::class, 'store'])->middleware('throttle:enquiries')->name('assistant-enquiry.submit');
 Route::post('/api/chat/enquiry/cancel', [AssistantEnquiryController::class, 'cancel'])->middleware('throttle:assistant-review');
@@ -44,3 +50,4 @@ Route::prefix('api/admin')->group(function (): void {
         Route::get('/media/{uuid}', [MediaController::class, 'show'])->whereUuid('uuid')->name('admin.media.show');
     });
 });
+Route::get('/{path}', [PublicPageController::class, 'show'])->where('path', '(?!api(?:/|$)).*');

@@ -86,4 +86,14 @@ class AdminMediaTest extends TestCase
         $this->getJson('/api/media/not-a-uuid')->assertNotFound();
         $this->getJson('/api/media/11111111-1111-1111-1111-111111111111')->assertNotFound();
     }
+
+    public function test_media_database_path_cannot_escape_the_cms_directory(): void
+    {
+        $r = $this->postJson('/api/admin/media', ['image' => UploadedFile::fake()->image('logo.png')])->assertCreated();
+        $url = $r->json('data.url');
+        DB::table('site_settings')->where('key', 'logo')->update(['value' => $url]);
+        DB::table('media_assets')->update(['path' => '../.env']);
+        $this->get($url)->assertNotFound();
+        $this->get($r->json('data.preview_url'))->assertNotFound();
+    }
 }

@@ -18,7 +18,9 @@ class PublicCatalogueController extends Controller
         $categories = Category::where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'slug', 'summary', 'icon', 'seo_title', 'seo_description']);
         $faqs = DB::table('faqs')->whereNull('service_id')->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['question', 'answer']);
 
-        return response()->json(['data' => compact('settings', 'categories', 'faqs')]);
+        $public_url = rtrim(config('public_site.url'), '/');
+
+        return response()->json(['data' => compact('settings', 'categories', 'faqs', 'public_url')]);
     }
 
     public function index(Request $request): AnonymousResourceCollection

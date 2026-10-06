@@ -1,25 +1,11 @@
-import { useEffect, useState, Suspense, lazy } from "react";
+import { useEffect, useRef, useState, Suspense, lazy } from "react";
 import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { getData, type Site, type Service } from "./api";
 import { Brand, Ecosystem, Icon, ServiceCard, mediaSource } from "./components";
 import EnquiryForm from "./EnquiryForm";
-import ChatWidget from "./ChatWidget";
+import Seo from "./Seo";
+const ChatWidget = lazy(() => import("./ChatWidget"));
 const AdminApp = lazy(() => import("./admin/AdminApp"));
-
-function Seo({ title, description }: { title: string; description: string }) {
-  const location = useLocation();
-  useEffect(() => {
-    document.title = title;
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "description");
-      document.head.append(meta);
-    }
-    meta.setAttribute("content", description);
-  }, [title, description, location.pathname]);
-  return null;
-}
 function Faqs({ items }: { items: Site["faqs"] }) {
   return (
     <div className="faq-list">
@@ -120,6 +106,8 @@ function Home({ site }: { site: Site }) {
       <Seo
         title={site.settings.seo_title}
         description={site.settings.seo_description}
+        baseUrl={site.public_url}
+        image={site.settings.logo}
       />
       <section className="hero wrap">
         <div className="hero-copy">
@@ -416,13 +404,22 @@ function Catalogue({ site }: { site: Site }) {
   return (
     <div className="wrap section catalogue-page">
       <Seo
+        baseUrl={site.public_url}
+        image={site.settings.logo}
+        noindex={Boolean(
+          category && !site.categories.some((c) => c.slug === category),
+        )}
         title={
           site.categories.find((c) => c.slug === category)?.seo_title ||
-          "Explore services | " + site.settings.company_name
+          (site.categories.find((c) => c.slug === category)?.name ||
+            "Explore services") +
+            " | " +
+            site.settings.company_name
         }
         description={
           site.categories.find((c) => c.slug === category)?.seo_description ||
-          "Explore banking business services, Digital Seva, business opportunities, software and digital marketing."
+          site.categories.find((c) => c.slug === category)?.summary ||
+          site.settings.seo_description
         }
       />
       <Link className="breadcrumb" to="/">
@@ -513,6 +510,11 @@ function Detail({ site }: { site: Site }) {
   if (error)
     return (
       <section className="wrap section empty-state">
+        <Seo
+          title={"Service unavailable | " + site.settings.company_name}
+          description="Explore the currently published catalogue."
+          noindex
+        />
         <h1>Service unavailable</h1>
         <p role="alert">{error}</p>
         <Link className="button primary" to="/services">
@@ -541,6 +543,8 @@ function Detail({ site }: { site: Site }) {
       <Seo
         title={s.seo_title || s.title + " | " + site.settings.company_name}
         description={s.seo_description || s.short_description}
+        baseUrl={site.public_url}
+        image={s.hero_image || site.settings.logo}
       />
       <section className="detail-hero wrap section">
         <Link
@@ -635,6 +639,8 @@ function Detail({ site }: { site: Site }) {
                         className="provider-logo"
                         src={mediaSource(p.logo_path)}
                         alt={p.name + " logo"}
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <h3>{p.name}</h3>
@@ -728,9 +734,16 @@ function Detail({ site }: { site: Site }) {
 export default function App() {
   const route = useLocation();
   return route.pathname.startsWith("/admin") ? (
-    <Suspense fallback={<p role="status">Loading workspace…</p>}>
-      <AdminApp />
-    </Suspense>
+    <>
+      <Seo
+        title="Administrator workspace | Global Link Multiservice"
+        description="Authorized administrator access."
+        noindex
+      />
+      <Suspense fallback={<p role="status">Loading workspace…</p>}>
+        <AdminApp />
+      </Suspense>
+    </>
   ) : (
     <PublicApp />
   );
@@ -739,7 +752,19 @@ function PublicApp() {
   const [site, setSite] = useState<Site | null>(null);
   const [error, setError] = useState("");
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const location = useLocation();
+  useEffect(() => {
+    if (!menu) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenu(false);
+        menuButton.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [menu]);
   useEffect(() => {
     const abort = new AbortController();
     getData<Site>("/site", abort.signal)
@@ -759,6 +784,12 @@ function PublicApp() {
       window.scrollTo(0, 0);
     }
   }, [location.pathname, location.hash]);
+  useEffect(() => {
+    if (site)
+      document
+        .querySelector<HTMLElement>("#main")
+        ?.focus({ preventScroll: true });
+  }, [location.pathname, site]);
   useEffect(() => {
     let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     const src = mediaSource(site?.settings.favicon);
@@ -816,6 +847,7 @@ function PublicApp() {
           </Link>
           <button
             className="menu-button"
+            ref={menuButton}
             aria-label={menu ? "Close navigation" : "Open navigation"}
             aria-expanded={menu}
             aria-controls="main-navigation"
@@ -840,7 +872,7 @@ function PublicApp() {
           </nav>
         </div>
       </header>
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<Home site={site} />} />
           <Route path="/services" element={<Catalogue site={site} />} />
@@ -849,6 +881,11 @@ function PublicApp() {
             path="*"
             element={
               <section className="wrap section empty-state">
+                <Seo
+                  title={"Page not found | " + site.settings.company_name}
+                  description="Explore the currently published catalogue."
+                  noindex
+                />
                 <h1>Page not found</h1>
                 <Link to="/">Return home</Link>
               </section>
@@ -856,7 +893,9 @@ function PublicApp() {
           />
         </Routes>
       </main>
-      <ChatWidget />
+      <Suspense fallback={null}>
+        <ChatWidget />
+      </Suspense>
       <footer className="footer">
         <div className="wrap footer-grid">
           <div>

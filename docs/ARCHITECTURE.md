@@ -1,4 +1,4 @@
-# Architecture — Phases 1–4
+# Architecture — Phases 1–6
 
 ## Boundaries
 
@@ -21,13 +21,13 @@ Unknown query parameters are rejected on the catalogue list. Slugs never become 
 
 One dynamic detail component supports every service. Homepage featured cards, category navigation, services, FAQ, public contacts and checklists come from the API. Editorial marketing copy and native SVG/CSS artwork belong to the design system. Empty optional detail groups disappear. Prices use integer paise from the API and INR display formatting; no prices are seeded. Async requests are aborted and stale responses ignored on route changes. Loading, error, retry and empty states are visible.
 
-Semantic sections/headings, focus indicators, skip link, native FAQ disclosure, responsive navigation, readable cards and reduced-motion CSS form the initial accessibility foundation. No third-party web font or image download is needed. Service titles/meta descriptions are set on navigation. Full SEO and accessibility/performance audits remain Phase 6.
+Semantic sections/headings, focus indicators, skip links, native FAQ disclosure and reduced-motion CSS provide the accessibility foundation. Phase 6 adds route focus, Escape handling, hidden-menu keyboard exclusion, focused/associated error summaries, unique CMS field IDs and darker small text. No third-party web font or image download is needed. Assistant and qualification code now split separately from the public entry bundle; image dimensions/decoding and lazy loading reduce unnecessary layout work. Practical desktop/mobile acceptance is recorded in PHASE_6_REPORT.md; this is not a formal WCAG certification.
 
 ## Security and publication
 
 CMS text is rendered as escaped text; rich HTML is not executed. Money requires active and verified flags before public exposure. Provider names are editable labels and carry a no-partnership disclaimer. Checklists contain no submitted identity documents or payment instructions. API secrets are never returned, including settings incorrectly marked public but absent from the allowlist.
 
-Production requests fail closed if APP_DEBUG is enabled or HTTPS is absent. Configure a trusted TLS proxy deliberately if hosting requires it; do not blindly trust arbitrary forwarded headers. Response headers include nosniff, DENY framing and a conservative referrer policy. Public JSON is no-store. File cache throttling suits one PHP host; multi-host operation is outside this scope.
+Production fails closed for debug mode, absent HTTPS, non-HTTPS APP_URL or an unexpected request host. TRUSTED_PROXIES accepts explicit verified IPs/CIDRs; forwarded Host is never trusted. Same-origin CORS grants no external origins. Success and error responses receive nosniff, DENY, CSP, referrer and permissions policies, plus HSTS on secure production responses. Private/session/lead/error responses remain no-store. Public catalogue JSON uses private immediate revalidation and ETags computed from current scoped data: no stale shared cache or unpublication delay. File cache locking/throttling supports one PHP host.
 
 ## Administrator CMS
 
@@ -39,14 +39,13 @@ JPEG/PNG/WebP uploads require actual server MIME/extension checks and GD decodin
 
 Public components consume CMS images, CTA text, optional-document flags, provider overrides/notes/disclaimers, settings, footer/social links and category/service SEO. Empty groups disappear. Dashboard metrics are actual catalogue counts with recent safe audits and optional missing-image attention. Audit lists paginate 30 rows, admin services cap at 250 and public service lists at 100.
 
-## Subsequent phases — not implemented
+## Public HTML and remaining deployment phase
 
-4: Laravel-only Gemini integration with database-grounded context, budget/rate/history limits, timeout and fallback; no model access to arbitrary SQL.
-5: structured lead capture through normal validated enquiry services.
-6: comprehensive security, SEO, accessibility and performance QA.
-7: verified Hostinger deployment package, migration/backup/restore procedure and HTTPS acceptance.
+PublicPageController renders CMS-backed initial HTML metadata for home, catalogue/category and service routes, including canonical/Open Graph/Twitter tags. Blade escapes all values. React Seo maintains equivalent tags on navigation and clears stale metadata on private/unavailable routes. Missing services/pages return actual HTTP 404; the HTML fallback excludes API routes so their 404/405 contract remains intact. Admin shells are noindex and contain no authenticated data.
 
-Phase 5 is implemented; Phase 6 and later have not started. Schema extensions remain incremental migrations; do not duplicate catalogue content in frontend or AI prompts.
+Production requires private frontend/dist/.vite/manifest.json beside backend. Blade references its hashed CSS/JS under public /assets; missing production builds fail closed. A noscript overview and published service links are available without JavaScript. This is metadata rendering with a React interactive body, not full React SSR. Sitemap contains home/catalogue, active categories and published services under active categories. Robots blocks private/mutation APIs and admin routes while allowing public catalogue/media needed for rendering; APIs send noindex headers. No fabricated ratings, offers or organization assertions are emitted.
+
+Phase 6 is implemented. Phase 7 remains a separate host/domain/TLS/rewrite/backup/deployment verification step; no deployment has occurred. Phase 6 changes no schema. Future schema extensions remain incremental; never rebuild a populated development or production database.
 
 ## Customer assistant
 

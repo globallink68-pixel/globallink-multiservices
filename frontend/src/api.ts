@@ -50,6 +50,7 @@ export type Service = {
 };
 export type Faq = { question: string; answer: string };
 export type Site = {
+  public_url?: string;
   settings: Record<string, string>;
   categories: Category[];
   faqs: Faq[];

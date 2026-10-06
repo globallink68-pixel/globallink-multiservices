@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { getData, type Service } from "./api";
 type Values = {
   name: string;
@@ -42,6 +42,18 @@ export default function LeadQualification({
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [fields, setFields] = useState<Record<string, string[]>>({});
+  const errorId = useId();
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error, fields]);
+  function accessibility(field: string) {
+    return {
+      "aria-invalid": Boolean(fields[field]),
+      "aria-describedby": fields[field] ? errorId : undefined,
+    };
+  }
   const lock = useRef(false);
   const token = useRef("");
   const csrf = useRef("");
@@ -122,6 +134,7 @@ export default function LeadQualification({
       });
       const result = await response.json();
       if (!response.ok) {
+        setFields(result.errors ?? {});
         const validation = Object.values(result.errors ?? {})
           .flat()
           .join(" ");
@@ -147,6 +160,7 @@ export default function LeadQualification({
     lock.current = true;
     setBusy(true);
     setError("");
+    setFields({});
     try {
       const next = await request("/api/chat/enquiry/review", {
         ...values,
@@ -173,6 +187,7 @@ export default function LeadQualification({
     lock.current = true;
     setBusy(true);
     setError("");
+    setFields({});
     try {
       const result = await request("/api/chat/enquiry", {
         ...review.summary,
@@ -230,9 +245,16 @@ export default function LeadQualification({
             Gemini. Do not enter Aadhaar/PAN numbers, bank details, passwords or
             OTPs.
           </p>
-          {error && <p role="alert">{error}</p>}
+          {error && (
+            <p role="alert" ref={errorRef} id={errorId} tabIndex={-1}>
+              {error}
+            </p>
+          )}
           {review ? (
-            <form onSubmit={submit}>
+            <form
+              onSubmit={submit}
+              aria-describedby={error ? errorId : undefined}
+            >
               <dl className="qualification-summary">
                 <dt>Service</dt>
                 <dd>{review.service.title}</dd>
@@ -289,7 +311,10 @@ export default function LeadQualification({
               </div>
             </form>
           ) : (
-            <form onSubmit={prepare}>
+            <form
+              onSubmit={prepare}
+              aria-describedby={error ? errorId : undefined}
+            >
               <label>
                 Name
                 <input
@@ -297,6 +322,7 @@ export default function LeadQualification({
                   minLength={2}
                   maxLength={120}
                   autoComplete="name"
+                  {...accessibility("name")}
                   value={values.name}
                   onChange={(e) =>
                     setValues({ ...values, name: e.target.value })
@@ -308,6 +334,7 @@ export default function LeadQualification({
                 <input
                   required
                   type="tel"
+                  {...accessibility("mobile")}
                   maxLength={18}
                   autoComplete="tel"
                   placeholder="10-digit mobile, optional +91"
@@ -321,6 +348,7 @@ export default function LeadQualification({
                 Email (optional)
                 <input
                   type="email"
+                  {...accessibility("email")}
                   maxLength={254}
                   autoComplete="email"
                   value={values.email}
@@ -337,6 +365,7 @@ export default function LeadQualification({
                     minLength={2}
                     maxLength={80}
                     autoComplete="address-level1"
+                    {...accessibility("state")}
                     value={values.state}
                     onChange={(e) =>
                       setValues({ ...values, state: e.target.value })
@@ -350,6 +379,7 @@ export default function LeadQualification({
                     minLength={2}
                     maxLength={100}
                     autoComplete="address-level2"
+                    {...accessibility("city")}
                     value={values.city}
                     onChange={(e) =>
                       setValues({ ...values, city: e.target.value })
@@ -360,6 +390,7 @@ export default function LeadQualification({
               <label>
                 Relevant service
                 <select
+                  {...accessibility("service_id")}
                   required
                   value={values.service_id}
                   onChange={(e) =>
@@ -377,6 +408,7 @@ export default function LeadQualification({
               <label>
                 Short requirement
                 <textarea
+                  {...accessibility("message")}
                   required
                   minLength={10}
                   maxLength={500}
@@ -403,6 +435,7 @@ export default function LeadQualification({
                   type="checkbox"
                   required
                   checked={values.consent}
+                  {...accessibility("consent")}
                   onChange={(e) =>
                     setValues({ ...values, consent: e.target.checked })
                   }

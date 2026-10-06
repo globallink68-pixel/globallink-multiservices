@@ -58,6 +58,7 @@ class MediaController extends Controller
     {
         $m = DB::table('media_assets')->where('uuid', $uuid)->first();
         abort_unless($m, 404);
+        abort_unless($m->path === 'cms/'.$uuid.'.png' && $m->mime === 'image/png', 404);
         $url = '/api/media/'.$uuid;
         if (! $r->routeIs('admin.media.show')) {
             $setting = DB::table('site_settings')->where('is_public', true)->whereIn('key', ['logo', 'favicon', 'footer_logo'])->where('value', $url)->exists();

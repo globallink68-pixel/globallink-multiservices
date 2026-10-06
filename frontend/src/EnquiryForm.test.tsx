@@ -100,6 +100,14 @@ it("server validation preserves entered fields", async () => {
     "Enter a valid mobile.",
   );
   expect(screen.getByLabelText("Name")).toHaveValue("Fictional visitor");
+  expect(screen.getByRole("alert")).toHaveFocus();
+  expect(screen.getByLabelText("Mobile")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByLabelText("Mobile")).toHaveAccessibleDescription(
+    /valid mobile/,
+  );
 });
 it("rate limiting gives useful feedback without success", async () => {
   fetchMock.mockImplementation((url: string) =>

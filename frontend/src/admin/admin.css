@@ -97,12 +97,12 @@
 }
 .admin-eyebrow {
   font-size: 10px;
-  color: #6c87a8;
+  color: #566b84;
   font-weight: 750;
   letter-spacing: 0.14em;
 }
 .admin-intro {
-  color: #62748e;
+  color: #566b84;
   margin-bottom: 28px;
 }
 .admin-panel {
@@ -118,7 +118,7 @@
   margin: 0 0 14px;
 }
 .admin-panel p {
-  color: #62748e;
+  color: #566b84;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -136,7 +136,7 @@
 }
 .admin-metrics span {
   font-size: 13px;
-  color: #62748e;
+  color: #566b84;
 }
 .admin-metrics strong {
   display: block;
@@ -226,7 +226,7 @@
 }
 .admin-workspace input[readonly] {
   background: #f2f5f9;
-  color: #75849c;
+  color: #566b84;
 }
 .admin-workspace .admin-check {
   flex-direction: row;
@@ -249,7 +249,7 @@
 .admin-field small,
 .admin-image-field small {
   font-size: 11px;
-  color: #72839c;
+  color: #566b84;
   font-weight: 400;
 }
 .admin-table-wrap {
@@ -268,7 +268,7 @@
 }
 .admin-table-wrap th {
   background: #f9fbff;
-  color: #7a8ca5;
+  color: #566b84;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -282,7 +282,7 @@
 .admin-table-wrap td small {
   display: block;
   font-size: 11px;
-  color: #8493a7;
+  color: #566b84;
   margin-top: 5px;
 }
 .admin-table-wrap td a {
@@ -317,7 +317,7 @@
 }
 .admin-activity small {
   font-size: 11px;
-  color: #8595aa;
+  color: #566b84;
 }
 .admin-record {
   display: flex;
@@ -331,7 +331,7 @@
 .admin-record small {
   display: block;
   margin-top: 5px;
-  color: #8492a9;
+  color: #566b84;
   font-size: 11px;
 }
 .admin-empty {
@@ -399,7 +399,7 @@
 }
 .admin-repeat legend {
   font-size: 12px;
-  color: #69819f;
+  color: #566b84;
   padding: 0 8px;
 }
 .admin-row-actions {
@@ -475,7 +475,7 @@
 }
 .admin-login p {
   font-size: 14px;
-  color: #7a8ba3;
+  color: #566b84;
   margin-bottom: 28px;
 }
 .admin-login form > .admin-primary {
@@ -490,7 +490,7 @@
 }
 .admin-login > small {
   font-size: 11px;
-  color: #7d90aa;
+  color: #566b84;
   margin-top: 28px;
 }
 .admin-loading {
@@ -535,11 +535,13 @@
 @media (max-width: 760px) {
   .admin-sidebar {
     transform: translateX(-100%);
+    visibility: hidden;
     transition: transform 0.2s;
     width: 230px;
   }
   .admin-sidebar.open {
     transform: translateX(0);
+    visibility: visible;
     box-shadow: 20px 0 80px #102a4930;
   }
   .admin-body {

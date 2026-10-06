@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { adminApi, AdminError } from "./api";
+import FormFeedback from "./FormFeedback";
 
 export const leadStatuses = [
   "NEW",
@@ -49,14 +50,10 @@ function Feedback({ error }: { error: unknown }) {
   if (!error) return null;
   const value = error as AdminError;
   return (
-    <div className="admin-error" role="alert">
-      <strong>{value.message ?? "The request could not be completed."}</strong>
-      {Object.entries(value.errors ?? {}).map(([key, messages]) => (
-        <p key={key}>
-          {label(key)}: {messages.join(" ")}
-        </p>
-      ))}
-    </div>
+    <FormFeedback
+      message={value.message ?? "The request could not be completed."}
+      errors={value.errors}
+    />
   );
 }
 function useLeadData<T>(path: string) {
@@ -393,6 +390,7 @@ export function EnquiryDetail() {
                   New lead status
                   <select
                     required
+                    name="status"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >

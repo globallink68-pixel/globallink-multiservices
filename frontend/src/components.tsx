@@ -89,6 +89,9 @@ export function Brand({
       {mediaSource(logo) ? (
         <img
           className="brand-logo"
+          width={48}
+          height={48}
+          decoding="async"
           src={mediaSource(logo)}
           alt={name + " logo"}
         />
@@ -118,6 +121,10 @@ export function ServiceCard({ service }: { service: Service }) {
         {mediaSource(service.icon_path) ? (
           <img
             className="service-icon-image"
+            width={27}
+            height={27}
+            loading="lazy"
+            decoding="async"
             src={mediaSource(service.icon_path)}
             alt=""
           />

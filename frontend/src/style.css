@@ -38,8 +38,10 @@ button {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #edb446;
+  outline: 3px solid #1765ec;
   outline-offset: 5px;
 }
 html {
@@ -497,7 +499,7 @@ em {
 }
 .service-category {
   font-size: 0.61rem;
-  color: #75859a;
+  color: #566b84;
   font-weight: 650;
   letter-spacing: 0.035em;
   margin-bottom: 12px;
@@ -765,7 +767,7 @@ details[open] .faq-plus {
 .footer-grid > div > a:not(:first-child) {
   display: block;
   font-size: 0.76rem;
-  color: #63758c;
+  color: #566b84;
   margin-bottom: 14px;
 }
 .footer-bottom {
@@ -778,7 +780,7 @@ details[open] .faq-plus {
   justify-content: space-between;
   gap: 30px;
   font-size: 0.63rem;
-  color: #75859a;
+  color: #566b84;
 }
 .footer-bottom p {
   font-size: 0.61rem;
@@ -790,7 +792,7 @@ details[open] .faq-plus {
 }
 .breadcrumb {
   font-size: 0.72rem;
-  color: #788ca5;
+  color: #566b84;
   display: block;
   margin-bottom: 40px;
 }

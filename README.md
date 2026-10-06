@@ -1,6 +1,6 @@
 # Global Link Multiservice
 
-Phase 1 public website, Phase 2 administrator CMS, Phase 3 enquiry/lead management Phase 4 database-grounded Gemini customer assistant and Phase 5 controlled conversational lead qualification. Independent React/Vite frontend, Laravel API and MySQL catalogue. No sibling project or database is used. Phase 5 is implemented; Phase 6 is deferred.
+Phases 1–6: public website, administrator CMS, enquiry/lead management, database-grounded Gemini assistant, controlled conversational qualification and production hardening/pre-deployment QA. Independent React/Vite frontend, Laravel API and MySQL catalogue. No sibling project or database is used. Phase 7 deployment remains deferred.
 
 ## Project layout
 
@@ -23,7 +23,7 @@ For a fresh checkout, create these two databases and a distinct app account with
 1. In `backend`, run `composer install`. Copy `.env.example` to `.env`; enter the new database credentials, then run `php artisan key:generate`.
 2. Copy `.env.testing.example` to `.env.testing`. Set a generated APP_KEY and credentials for the dedicated test database. Tests refuse any database other than `globallink_phase1_test` on port 3312.
 3. Run `php artisan migrate --seed` once on the new development database. The initial seeder supplies 5 categories, 32 services, 8 provider labels and retailer/distributor document checklists. It creates no admin login. Do not routinely reseed later CMS-managed installations; missing starter records can be recreated.
-4. Start the API: `php artisan serve --host=localhost --port=8012` from `backend`. In this prepared workspace the ignored PHP binary is `tools/php/php.exe` and Composer is `tools/composer.phar`.
+4. Start Laravel: `php artisan serve --host=localhost --port=8012` from `backend`. In this prepared workspace the ignored PHP binary is `tools/php/php.exe` and Composer is `tools/composer.phar`. PHP must have writable private system/upload temporary storage; uploads and large POSTs can otherwise fail before Laravel.
 5. In `frontend`, run `npm ci` then `npm run dev`. Open http://localhost:5175. Vite proxies `/api` to localhost:8012.
 
 If the isolated database is stopped, run `powershell -File scripts/Start-Database.ps1` from this root. It uses the installed MySQL binary with this project's data directory and refuses a foreign process on its port.
@@ -32,7 +32,7 @@ If the isolated database is stopped, run `powershell -File scripts/Start-Databas
 
 In backend: `php artisan test`, `php vendor/bin/pint --dirty --format=agent`, `composer validate --strict`, `composer audit`. In frontend: `npm test`, `npm run lint`, `npm run build`, `npm audit`. At root: `node scripts/secret-scan.cjs` and `git diff --check`. Full commands assume local environment files are configured. Test migrations affect only the dedicated test database.
 
-The build output is `frontend/dist`, generated on demand and ignored by Git. Production is static assets plus a PHP API; see docs/HOSTINGER_DEPLOYMENT.md. No deployment has been performed.
+The build output is `frontend/dist`, including `.vite/manifest.json`, generated on demand and ignored by Git. Phase 6 production HTML, metadata, robots and sitemap are served by Laravel; hashed `/assets` remain static. Keep the complete build in the private sibling `frontend/dist` directory and copy only its `assets` directory into Laravel's public root. Do not deploy Vite's static `index.html` as the public entry page. See docs/HOSTINGER_DEPLOYMENT.md. No deployment has been performed.
 
 ## Scope and content
 
@@ -42,4 +42,4 @@ Real supplied logo was unavailable as a filesystem asset during Phase 2. The tem
 
 The assistant defaults to disabled. Set `GEMINI_ENABLED=true` and `GEMINI_API_KEY` only in Laravel's private environment, with optional `GEMINI_MODEL` (default `gemini-2.5-flash-lite`) and `GEMINI_TIMEOUT` (default 12 seconds, clamped to 3–20). Provider failures show contact/enquiry fallback. Never use a VITE-prefixed key. Tests mock the provider; no paid/live API call is required. No local test key was available for live Gemini verification.
 
-See docs/PHASE_5_REPORT.md for current validation, browser evidence, cleanup and limitations. Phase 1–4 reports remain historical evidence. Nothing has been pushed, merged or deployed.
+See docs/PHASE_6_REPORT.md for current validation, browser evidence, protected-data verification and limitations; docs/SECURITY.md documents the security boundaries. Phase 1–5 reports remain historical evidence. Nothing has been pushed, merged or deployed.

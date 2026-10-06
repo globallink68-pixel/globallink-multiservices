@@ -1,6 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { Link, useLocation } from "react-router-dom";
-import LeadQualification, { type ServiceInterest } from "./LeadQualification";
+import type { ServiceInterest } from "./LeadQualification";
+const LeadQualification = lazy(() => import("./LeadQualification"));
 
 type Fact = { label: string; text: string; source: string };
 type Reply = {
@@ -35,10 +43,12 @@ export default function ChatWidget() {
     ServiceInterest | undefined
   >();
   const [qualificationBusy, setQualificationBusy] = useState(false);
+  const launcher = useRef<HTMLButtonElement>(null);
   function closeAssistant() {
     if (qualificationBusy) return;
     setQualification(undefined);
     setOpen(false);
+    launcher.current?.focus();
   }
   const input = useRef<HTMLTextAreaElement>(null);
   const lastReply = useRef<HTMLDivElement>(null);
@@ -50,6 +60,7 @@ export default function ChatWidget() {
       if (event.key === "Escape" && !qualificationBusy) {
         setQualification(undefined);
         setOpen(false);
+        launcher.current?.focus();
       }
     }
     window.addEventListener("keydown", escape);
@@ -156,6 +167,7 @@ export default function ChatWidget() {
       {open && (
         <section
           className="chat-panel"
+          role="region"
           aria-label="Global Link customer assistant"
           onKeyDown={(e) => {
             if (e.key === "Escape") closeAssistant();
@@ -176,11 +188,15 @@ export default function ChatWidget() {
             </button>
           </header>
           {qualification !== undefined ? (
-            <LeadQualification
-              interest={qualification}
-              onCancel={() => setQualification(undefined)}
-              onBusyChange={setQualificationBusy}
-            />
+            <Suspense
+              fallback={<p role="status">Loading secure contact form…</p>}
+            >
+              <LeadQualification
+                interest={qualification}
+                onCancel={() => setQualification(undefined)}
+                onBusyChange={setQualificationBusy}
+              />
+            </Suspense>
           ) : (
             <>
               <div
@@ -322,6 +338,7 @@ export default function ChatWidget() {
         </section>
       )}
       <button
+        ref={launcher}
         className="chat-launcher"
         type="button"
         aria-expanded={open}
