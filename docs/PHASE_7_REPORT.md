@@ -1,85 +1,69 @@
-# Phase 7 — Hostinger deployment preparation and live acceptance status
+# Phase 7 — manual Hostinger deployment preparation
 
-**PHASE 7 READY FOR REVIEW: NO — live deployment remains blocked.**
+**Goal: COMPLETE MANUAL DEPLOYMENT PACKAGE.** Actual Hostinger deployment, live production acceptance, live Gemini and SMTP verification are **MANUAL/PENDING**. This resumption continues from commit `b0d6d0b7de9c2b21f2833b7bd35cac6c8fd4c2ef` on codex/phase-7; no reset, revert, discarded work or phase restart occurred. The approved application rollback commit remains `410e6f28a57f5787b0dc88831ba3e952b766ae51`.
 
-## Approved state and access
+The owner supplied a screenshot of an active globallinkmultiservice.in domain in hPanel. This is evidence of account/domain ownership, not a verified PHP hosting plan, runtime or document root. In this manual-preparation resumption Codex did not access hPanel, request browser authentication, use SSH/SFTP/FTP, deploy, change DNS or modify the existing website. Earlier read-only production observations and the prior local release/bundle remain historical evidence; they are not live acceptance of this package.
 
-The initial branch was codex/phase-6, HEAD exactly `410e6f28a57f5787b0dc88831ba3e952b766ae51`, with a clean working tree and passing git diff --check. Branch codex/phase-7 was created directly from that approved commit. No approved application behavior, dependency or schema was changed.
+## Deliverables
 
-The operator authorized `https://globallinkmultiservice.in` and reported an authenticated Hostinger hPanel session. The available Codex browser had no existing tabs/session; opening hPanel redirected to `https://auth.hostinger.com/login`. The tab was shown for private user sign-in. No password, key or database credential was requested, read, displayed, stored locally or committed. No local SSH config was present; actual account SSH availability could not be inspected without hPanel access. No new access was enabled.
+- Production target: **https://globallinkmultiservice.in**.
+- Deployment ZIP: **dist/hostinger/globallink-production.zip**, with an adjacent SHA-256 receipt and package validation record. The exact size/hash and completed validation results are recorded below.
+- Expanded staging under dist/hostinger contains the same intended payload. It is ignored by Git and retained as a deployment deliverable.
+- Production environment template: **deployment/hostinger/production.env.example** and its packaged private backend copy. Required secret fields are blank placeholders; database/SMTP identity fields use REPLACE_WITH placeholders. The target URL and production/debug-off/secure-session settings are explicit. Gemini defaults disabled. Allowed host derives from APP_URL; only independently verified proxy IPs/CIDRs belong in TRUSTED_PROXIES.
+- **deployment/hostinger/public_html.index.php** is the prepared fixed-root adapter. It loads maintenance/autoload/bootstrap from the private sibling globallink/backend and sets the Laravel public path to public_html. The normal private backend/public entry remains available for a configurable document root. Existing application behavior/security is unchanged.
+- **scripts/Build-HostingerPackage.ps1** creates the production-only payload from approved runtime files, a separately validated no-dev vendor directory, built assets and the manual guide/checklist. It omits app tests/factories, real environment/data/media, logs and caches, and removes unnecessary vendor distribution test support before regenerating optimized autoload metadata. It refuses an existing output directory.
+- **docs/HOSTINGER_DEPLOYMENT.md** now provides all 28 numbered manual steps, exact directory layouts, private command locations, expected results, bounded client checks, migration/seeding/admin creation, backup/cutover/rollback and redeployment procedures.
+- **docs/HOSTINGER_MANUAL_CHECKLIST.md** provides checkboxes for every manual deployment/acceptance/cleanup step.
 
-**BLOCKED — an authenticated Hostinger session accessible to Codex is missing.** Consequently the selected hosting plan, actual document root, PHP-FPM/CLI runtime, database identity/credentials, backup capability and SSH status cannot be verified. Do not equate the operator's session in another browser with an accessible session here.
+## Layout, runtime, database and operations
 
-## Read-only production observations
+Preferred layout keeps globallink/backend and sibling frontend private, with the selected web root at backend/public. Fixed-public_html fallback puts globallink beside public_html and uploads only the prepared public contents into the web root. The ZIP itself, guide, .env, vendor, storage, database, backups and manifest stay private. If the account cannot provide private parent-directory access, stop and establish a supported PHP hosting layout; do not move all application files under public_html.
 
-On 7 October 2026, the authorized domain returned HTTPS 200 with title **Marketing Agency** and server header hcdn. HTTP returned 301 with Location set to the exact HTTPS root. Normal Node TLS certificate validation succeeded; the certificate reported expiry 23 November 2026 UTC. Public A lookup returned 93.127.173.206 and 88.222.243.110; NS lookup timed out. No DNS or domain changes were made.
+Required runtime: PHP ^8.4, PDO MySQL, mbstring, openssl, tokenizer, ctype, fileinfo, GD PNG/JPEG/WebP, DOM/XML/XMLWriter and locked Composer runtime requirements. Production vendor is included; Composer need not be available on Hostinger. A secure private PHP CLI/support execution method is still necessary for Artisan. Web/CLI versions, MySQL compatibility, memory, PHP temporary directories, Apache modules and real permissions remain owner checks.
 
-These observations concern the existing site, not a deployed Laravel release. Only upgrade-insecure-requests CSP was observed on the root; Phase 6 CSP/HSTS/nosniff/frame protections were not verified on this existing response. Its hosting product/framework, files, databases and restore options remain unknown. This is a replacement-deployment target, not a verified empty installation. No existing site was overwritten.
+The guide uses safe migrate --force after identity/backup/migration-status checks. Seven existing migrations must be Ran; no Phase 7 schema changes exist. CatalogueSeeder is used only for a verified empty installation and inserts missing records. Expected baseline: 5 categories, 32 services, 52 content items, 8 providers, 8 bank details, 4 FAQs and 10 settings. No administrator/test credential or fictional lead is packaged. The legitimate local enquiry/history and any edited CMS data require a private protected transfer if they form the initial production data source; seeding alone does not transfer them. No dump/contact data is placed in the package.
 
-## Safe preparation completed
+CMS media stays in private storage/app/private/cms, served through reference-gated controllers; no storage:link is required. Writable storage/bootstrap cache and PHP upload temp directories must be verified. The package retains Phase 6 .htaccess/.user.ini policies and self-origin CSP/host/TLS checks. Hostinger Force HTTPS and actual proxy/cookie/Apache enforcement are manual verification, not claimed tested here.
 
-- Retained the exact approved commit on codex/phase-6 as the application rollback point. Created and verified an ignored local Git bundle under tools/phase7/phase6-rollback.bundle. This is source recovery, **not** an existing production file/database backup.
-- Rebuilt the approved frontend and verified all eight output files, hashed manifest entries and lazy assistant/qualification/admin chunks. No source maps, application mock URLs or credential signatures were found. Application fetches use same-origin /api.
-- Two inert http://localhost defaults exist in React Router's bundled URL-construction code. Their surrounding code uses browser origin during browser navigation; there are no application localhost endpoints. Vendor code was not changed merely to satisfy a blanket text search. Actual production network verification remains pending.
-- Staged approved application source outside the public root with a private manifest, public hashed assets and locked no-dev Composer dependencies. The release contains no production environment, database dump or legitimate visitor data; deploying code alone does not transfer that data.
-- Updated HOSTINGER_DEPLOYMENT.md with account/runtime preflight, environment names without secrets, preferred and fixed-public_html layouts, private storage, cache commands, backup/restore, protected-data transfer, bounded live acceptance, exact QA cleanup and maintenance/rollback procedures.
+SMTP configuration is optional for current lead capture; credentials remain private. Gemini stays disabled until a server-only key/model/quota/outbound access is verified, with controlled failure handoff available. Both real SMTP and live Gemini remain pending. Config/route/view caches are generated only on the production host after real environment setup; business cache is not flushed. No worker/cron is required by current features.
 
-## Regression and local verification
+The existing Marketing Agency website/database must have a verified recoverable backup before replacement. Guide/checklist cover private final backups and root/release/domain rollback, preserving APP_KEY/media/current database where compatible and reconciling post-backup enquiries before any database restore. No production backup or restore was performed.
 
-| Check | Phase 7 result |
+## Local regression and safety
+
+| Check | Result |
 | --- | --- |
-| Full Laravel | 108 tests passed; 1,356 assertions |
+| Full Laravel | 108 tests passed, 1,356 assertions |
 | Full React | 77 tests across eight files passed |
-| TypeScript, lint, production build | Passed |
-| Pint | Passed; no PHP changes |
-| Composer validation/platform/audit | Passed; no security advisories |
+| TypeScript / lint / production build | Passed |
+| Pint | Passed; adapter formatted |
+| PHP syntax | 73 application/config/database/route/test/bootstrap/adapter files passed |
+| Composer | Validation/platform/audit passed; no advisories |
 | npm audit | Zero vulnerabilities |
-| Local PHP | 8.4.26 CLI; actual Hostinger PHP unverified |
-| Production artifact inspection | Eight files checked; manifest targets exist; no source maps; two documented library fallback literals |
-| Local protected data | All 15 protected table hashes/counts match the approved Phase 6 baseline |
 
-Phase 7's final local transport rerun passed **188 HTTP/security checks**, including all 32 published service APIs/HTML metadata, conditional caching, authorization, CSRF, request bounds, methods, invalid filters, headers, robots and sitemap. These requests used the isolated local development database and are not production acceptance. Phase 6's production-like and desktop/mobile evidence remains historical application evidence only.
+Package and prepared-entry transport checks, final secret/diff checks, artifact size/hash and cleanup are finalized below. None constitutes actual Hostinger live acceptance. Practical limitations include real PHP-FPM/Apache/TLS/proxy settings, account folder/command availability, backups, secure credential entry, database transfer, live CMS/forms/CRM/browser acceptance, provider verification and traffic-aware QA cleanup.
 
-Production Composer installation completed with **76 locked no-dev packages**; platform requirements, audit and Laravel 13.34.0 CLI startup passed. The release ZIP contains **6,572 entries** and includes the required hidden Apache/PHP files and private manifest. Its 83 application/asset files passed a credential-signature scan. Runtime/environment/host-path adaptation still requires actual host verification.
+The owner's manual steps remain required even when **PHASE 7 DEPLOYMENT PACKAGE READY: YES**. Package readiness does not mean the domain is deployed or production-qualified. No push, merge or additional phase is authorized or performed.
 
-Intentional ignored local artifacts retained for resumption:
+## Final package qualification
 
-| Artifact | SHA-256 |
-| --- | --- |
-| tools/phase7/globallink-phase6-release.zip (8,445,361 bytes) | B6ED534AD54203CDCB76F84867DDE9AA482EC89B5455B040B93A77203C7EAC15 |
-| tools/phase7/phase6-rollback.bundle (1,100,747 bytes) | 2DA4A703181AD4A1719D2C1342602BEE2213779A1ABC62D50CDCD12258295611 |
+**PHASE 7 DEPLOYMENT PACKAGE READY: YES.** This is readiness of the manual delivery package, not actual deployment or live production acceptance.
 
-Checksums also reside in tools/phase7/ARTIFACTS.sha256. Neither artifact was uploaded. The release ZIP is a preparation artifact, not a deployed release or database/media backup.
+Deployment ZIP: `dist/hostinger/globallink-production.zip` — **8,679,497 bytes** (about 8.28 MiB).
 
-The local HTTP process stopped. Extracted release/dependency staging, source staging ZIP, frontend build, copied public assets, PHP temporary directory, fake test upload disks, PHPUnit result cache and TypeScript build cache were removed. No Phase 7 fictional user/lead/media records were created. All 15 local protected-data hashes still match both the Phase 7 starting snapshot and Phase 6 baseline. Final Git-candidate secret scan and diff checks passed; the documentation-only local commit leaves a clean working tree.
+SHA-256: `A43184061C38E1623BC061894A3BD76F4D1C5A0961A0BDF5280573E3F32F7B50`.
 
-## Live deployment and acceptance gates
+The adjacent `globallink-production.zip.sha256` receipt and `PACKAGE_VALIDATION.json` are retained with the ZIP. The actual final archive was reopened and all **6,520 files / 6,526 entries** inspected. Required hidden files, private vendor/template/manifest and both public-layout asset targets were verified. No matched secret signatures, completed .env, QA records/credentials/screenshots, source maps, databases/dumps, logs, caches, node_modules, Git directories or local Windows binaries remain. Removed 33 vendor distribution test-support files, unnecessary metadata and seven Windows-only executable/batch helpers; optimized production autoload metadata regenerated successfully (4,759 classes). Runtime framework source, licenses and required vendor dependencies remain; the installed set matches the 76 locked production packages and passed production platform/audit checks.
 
-| Area | Status |
-| --- | --- |
-| Hostinger plan/runtime/extensions/PHP temp/upload limits | BLOCKED: accessible hPanel/host required |
-| Existing production files/database backup | NOT CREATED: cannot inspect or back up the account; no overwrite permitted |
-| Production database and seven migrations | BLOCKED: identity, backup and migration state unavailable; no production SQL run |
-| Production environment/APP_KEY/database/SMTP | BLOCKED: private operator configuration and redacted verification required |
-| Storage/media/upload paths | BLOCKED: actual layout, permissions and HTTP reference gates unverified |
-| Document root/Apache/.user.ini | BLOCKED: actual host behavior unverified |
-| Domain/TLS | Existing site resolves and validates HTTPS; Laravel host/proxy/cookie/mixed-content behavior unverified |
-| Production config/route/view caches | NOT RUN on Hostinger |
-| Public/admin desktop/mobile-web acceptance | BLOCKED: approved release is not deployed |
-| SEO initial HTML/robots/sitemap | BLOCKED for Laravel release; existing root is the old Marketing Agency site |
-| AI assistant / AI_ASSISTANT CRM | Local regression passed; live acceptance BLOCKED |
-| Live Gemini | BLOCKED: no available server-side key/provider verification; no live call claimed |
-| Gemini failure fallback | Local regression passed; production behavior BLOCKED |
-| Production security acceptance | BLOCKED for deployed application; existing HTTP/TLS observations only |
-| Production protected-data before/after comparison | BLOCKED: no database access; no production data modified |
-| Production fictional QA records | None created; no production QA deletion required |
+Loopback/development-string inspection found **54 classified files**: two copies of the main bundle (two inert React Router localhost URL-construction defaults per copy), seven private application configuration files with environment-overridden defaults, 44 vendor defaults/examples/helpers and one manual guide reference. No application frontend localhost/test API endpoint is configured; requests use same-origin /api. These findings were reviewed and retained rather than changing vendor/runtime behavior to satisfy an indiscriminate string search. Real production environment configuration is mandatory.
 
-## Recovery and completion prerequisites
+The prepared fixed-public_html entry with the packaged no-dev vendor passed **212 local HTTP/security checks**: 188 checks covering all 32 service APIs and initial HTML metadata, private authorization/cache/index rules, CSRF, body limits, methods, filters, robots/sitemap/404s, plus 24 checks for homepage/catalogue/admin HTML, missing page and every hashed static asset. The run used the isolated local development database and explicit loopback forwarded HTTPS simulation; no Hostinger connection or real TLS/Apache qualification is claimed. The original preferred entry is preserved; its manifest targets were verified alongside the fallback. Apache/.user.ini enforcement remains a mandatory actual-host check.
 
-The exact pre-deployment application commit is `410e6f28a57f5787b0dc88831ba3e952b766ae51`. Preserve existing web files, private environment/media and production database in a verified private backup before cutover. Confirm the old site's recoverable domain/release binding and restore mechanism. No production backup timestamp/identifier is invented because no backup was taken.
+Final Git-candidate secret scan and diff checks passed. All **15 protected local table hashes/counts** remained identical to the approved Phase 6 and Phase 7 starting snapshots, including the legitimate enquiry/history. No fictional lead/admin/media was created for these package checks. The local PHP process stopped; extracted vendor staging, PHP temporary directory, fake test disks, PHPUnit/TypeScript caches and frontend build were removed. Generated package caches/logs/views were cleared before sealing. Intentional delivery artifacts and the earlier source rollback bundle remain ignored locally. A local additional Phase 7 commit records the six source/documentation deliverables; its identifier is supplied in the completion message, with a clean working tree.
 
-Use the runbook to stage the private Laravel release and production environment, verify the dedicated MySQL identity and seven migrations, preserve the legitimate enquiry/CMS during any initial data transfer, generate only config/route/view caches, switch the verified root and run all requested live acceptance. Live traffic may create legitimate new leads: compare stable records and expected QA deltas rather than blindly restoring older whole-table state.
+Actual Hostinger deployment: **MANUAL/PENDING**.
+Live production acceptance: **MANUAL/PENDING**.
+Live Gemini: **PENDING**.
+SMTP production verification: **PENDING**.
 
-Rollback the application/domain binding to the verified previous release; retain the current database where compatible. Never apply an old dump over new enquiries or run blanket migration rollback. A database restore requires a tested, separately controlled recovery target and reconciliation of post-backup data.
-
-No push, merge, hosting upload, domain change, environment mutation, production migration, native mobile app, redesign or additional phase occurred. SMTP and live Gemini remain optional verification items pending private operator availability; authenticated hosting access and recoverable backups are mandatory deployment gates.
+Manual actions required: all 28 numbered guide steps and checklist, including verified old-site/database backup; host/private-root/PHP CLI readiness; private APP_KEY/database setup and protected data transfer; safe migrations/empty-only seeding; SSL/proxy/permissions/cache setup; actual desktop/mobile public/admin/assistant/SEO/security acceptance; exact fictional QA cleanup; final backup and recoverable rollback. No credentials or live host success are inferred from the supplied screenshot or package qualification.
