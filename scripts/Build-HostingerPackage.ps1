@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$ProductionVendorDirectory,
     [string]$OutputDirectory,
-    [switch]$AllowWorkingTree
+    [switch]$AllowWorkingTree,
+    [switch]$RuntimeOnly
 )
 $ErrorActionPreference = 'Stop'
 $manualRoot = Split-Path -Parent $PSScriptRoot
@@ -32,6 +33,9 @@ foreach ($manualFile in $manualRequired) {
 }
 $manualMigrations = @(Get-ChildItem -LiteralPath (Join-Path $manualRoot 'backend/database/migrations') -File -Filter '*.php' | ForEach-Object { 'backend/database/migrations/' + $_.Name })
 if (@($manualMigrations | Where-Object { $_ -notin $manualTracked }).Count -gt 0) { throw 'Migration inventory is incomplete.' }
+if ($RuntimeOnly) {
+    $manualTracked = @($manualTracked | Where-Object { $_ -notlike 'backend/tests/*' -and $_ -notlike 'backend/database/factories/*' -and $_ -ne 'backend/phpunit.xml' })
+}
 $manualManifestPath = Join-Path $manualRoot 'frontend/dist/.vite/manifest.json'
 $manualManifest = Get-Content -LiteralPath $manualManifestPath -Raw | ConvertFrom-Json
 $manualBuildRoot = [IO.Path]::GetFullPath((Join-Path $manualRoot 'frontend/dist'))
@@ -46,6 +50,9 @@ $manualSourceHashes = @{}
 foreach ($manualFile in $manualTracked) { $manualSourceHashes[$manualFile] = (Get-FileHash -LiteralPath (Join-Path $manualRoot $manualFile) -Algorithm SHA256).Hash }
 $manualReviewFiles = @(& git -C $manualRoot ls-files --cached --others --exclude-standard frontend/src frontend/public frontend/index.html frontend/package.json frontend/package-lock.json frontend/tsconfig.json frontend/tsconfig.app.json frontend/tsconfig.node.json frontend/vite.config.ts scripts deployment docs) | Sort-Object -Unique
 if ($LASTEXITCODE -ne 0) { throw 'Review source inventory failed.' }
+$manualFrontendSourceHashes = @{}
+foreach ($manualFile in $manualReviewFiles | Where-Object { $_ -like 'frontend/*' }) { $manualFrontendSourceHashes[$manualFile] = (Get-FileHash -LiteralPath (Join-Path $manualRoot $manualFile) -Algorithm SHA256).Hash }
+if ($RuntimeOnly) { $manualReviewFiles = @() }
 foreach ($manualFile in $manualReviewFiles) { $manualSourceHashes[$manualFile] = (Get-FileHash -LiteralPath (Join-Path $manualRoot $manualFile) -Algorithm SHA256).Hash }
 $manualBuildHashes = @{}
 $manualBuildHashes['.vite/manifest.json'] = (Get-FileHash -LiteralPath $manualManifestPath -Algorithm SHA256).Hash
@@ -81,7 +88,7 @@ $manualManifestDir = Join-Path $manualOutput 'globallink/frontend/dist/.vite'
 New-Item -ItemType Directory -Path $manualManifestDir -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $manualRoot 'frontend/dist/.vite/manifest.json') -Destination $manualManifestDir
 Copy-Item -LiteralPath (Join-Path $manualRoot 'frontend/dist/assets') -Destination (Join-Path $manualBackend 'public') -Recurse
-Copy-Item -LiteralPath (Join-Path $manualRoot 'deployment/hostinger/production.env.example') -Destination $manualBackend
+if (-not $RuntimeOnly) { Copy-Item -LiteralPath (Join-Path $manualRoot 'deployment/hostinger/production.env.example') -Destination $manualBackend }
 Copy-Item -LiteralPath (Join-Path $manualBackend 'public') -Destination (Join-Path $manualOutput 'public_html') -Recurse
 Copy-Item -LiteralPath (Join-Path $manualRoot 'deployment/hostinger/public_html.index.php') -Destination (Join-Path $manualOutput 'public_html/index.php') -Force
 Copy-Item -LiteralPath (Join-Path $manualRoot 'docs/HOSTINGER_DEPLOYMENT.md') -Destination (Join-Path $manualOutput 'DEPLOYMENT_README.md')
@@ -103,6 +110,9 @@ foreach ($manualFile in $manualSourceHashes.Keys) {
     $manualCopied = if ($manualFile -like 'backend/*') { Join-Path $manualBackend $manualFile.Substring(8) } else { Join-Path $manualOutput ('source/' + $manualFile) }
     if ((Get-FileHash -LiteralPath $manualCopied -Algorithm SHA256).Hash -ne $manualSourceHashes[$manualFile]) { throw "Packaged source mismatch: $manualFile" }
 }
+foreach ($manualFile in $manualFrontendSourceHashes.Keys) {
+    if ((Get-FileHash -LiteralPath (Join-Path $manualRoot $manualFile) -Algorithm SHA256).Hash -ne $manualFrontendSourceHashes[$manualFile]) { throw "Frontend source changed while packaging: $manualFile" }
+}
 if ((@(& git -C $manualRoot status --porcelain) -join "`n") -ne ($manualStatus -join "`n")) { throw 'Working-tree inventory changed while packaging.' }
 foreach ($manualAsset in $manualBuildHashes.Keys) {
     if ((Get-FileHash -LiteralPath (Join-Path $manualBuildRoot $manualAsset) -Algorithm SHA256).Hash -ne $manualBuildHashes[$manualAsset]) { throw "Frontend build changed while packaging: $manualAsset" }
@@ -116,7 +126,7 @@ foreach ($manualFile in Get-ChildItem -LiteralPath $manualOutput -File -Recurse 
     $manualRelative = $manualFile.FullName.Substring($manualOutput.Length + 1).Replace('\','/')
     $manualContentHashes[$manualRelative] = (Get-FileHash -LiteralPath $manualFile.FullName -Algorithm SHA256).Hash
 }
-$manualReceipt = @{ commit=$manualCommit; workingTreeStatus=$manualStatus; includesUntracked=$true; migrations=$manualMigrations; frontendManifestSHA256=$manualBuildHashes['.vite/manifest.json']; frontendBuildSHA256=$manualBuildHashes; sourceSHA256=$manualSourceHashes; contentSHA256=$manualContentHashes }
+$manualReceipt = @{ commit=$manualCommit; workingTreeStatus=$manualStatus; includesUntracked=$true; runtimeOnly=[bool]$RuntimeOnly; packagingScriptSHA256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash; migrations=$manualMigrations; frontendSourceSHA256=$manualFrontendSourceHashes; frontendManifestSHA256=$manualBuildHashes['.vite/manifest.json']; frontendBuildSHA256=$manualBuildHashes; sourceSHA256=$manualSourceHashes; contentSHA256=$manualContentHashes }
 $manualReceipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $manualOutput 'RELEASE_RECEIPT.json') -Encoding UTF8
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
