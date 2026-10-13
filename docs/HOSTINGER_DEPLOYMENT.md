@@ -1,14 +1,42 @@
 # Manual Hostinger deployment — Global Link Multiservice
 
+## Provider workflow release update — 13 October 2026
+
+The old `dist/hostinger/globallink-production.zip` is historical and must be preserved. Generate a new uniquely named output with `scripts/Build-HostingerPackage.ps1 -ProductionVendorDirectory <verified-production-vendor> -OutputDirectory <new-private-output>`. A deliberately approved working-tree package requires `-AllowWorkingTree`; the receipt records its status and hashes. The script includes tracked and untracked allowlisted application files, all migrations, tests, and private review sources, rejects missing required files/assets and existing outputs, and verifies every final ZIP member against its recorded content hash. The archive is beside the staging folder, with an adjacent SHA-256 receipt. Private `source/` review material and tests must never be placed in public_html or run against the production database.
+
+This release requires **eight migrations**, including `2026_10_13_130001_add_description_to_bank_service_details`. The new migration adds nullable TEXT `bank_service_details.description`; it does not change existing provider records or relationships. Before any production command, obtain owner change authorization and verify a practical backup/restore path for the database, private media, application files and `.env`/APP_KEY.
+
+Read-only preflight: inspect migration history and `SHOW CREATE TABLE bank_service_details`, confirm the schema identity, transactional InnoDB tables, provider code unique index, service/provider composite unique index, complete foreign-key dependency inventory and actual app-account visibility. If the column exists and migration is recorded, do not rerun it. If the column exists without matching history, or history says applied but the column is absent/incompatible, STOP for reviewed reconciliation; never manually alter migration history to hide an error.
+
+The exact read-only statements are supplied in private `source/deployment/hostinger/provider-read-only-checks.sql` in the package. Run privately through phpMyAdmin on the selected application database; inspect grants using the actual application account. Review results without sharing credentials, dumps or account details. A missing migration table in an existing installation is a stop condition, not permission to reset it.
+
+Only after approval, apply the necessary additive migration while compatible old code remains active, or during an approved maintenance window. **Never expose the new backend before the column exists.** Then publish matching backend, private manifest and public assets. Preserve old hashed assets for open tabs/lazy modules. Update only approved configuration, route and view caches; do not flush business cache, rotate APP_KEY, reseed a populated database or restore an old dump routinely.
+
+Normal application rollback restores the previous compatible backend and matching manifest/assets while **keeping the new column and migration history**. New descriptions remain stored. Migration `down()` destroys those descriptions and is a separate, specifically approved schema operation requiring an export/backup. If migration succeeds but code release fails, retain the additive schema and old code. If migration fails, STOP the new code cutover and inspect physical schema/history independently.
+
+The prior local audit blockers are addressed by the deletion contract and uncertain-write recovery below. Local MySQL tests do not establish Hostinger/MariaDB acceptance. **Do not publish until actual-host schema, PHP/runtime, backup/restore and authorized acceptance checks pass.** No production access was performed in this task.
+
+### Permanent deletion contract and request recovery
+
+Keep `PROVIDER_PERMANENT_DELETE_ENABLED=false` on Hostinger unless independently approved and verified. Editing/deactivation remains available. Enabled deletion requires MySQL/MariaDB, InnoDB for providers, services, audit logs and every referencing table, and complete metadata visibility. The current visibility proof accepts only an explicit direct global SELECT/ALL grant with no partial revokes; schema-scoped grants or role-only grants fail closed. **Do not grant broad global privileges merely to enable deletion on shared hosting.** Leave deletion disabled when the account cannot establish this contract.
+
+Only same-schema, single-column foreign keys targeting `providers.id` are supported. Cross-schema, composite, self, non-ID, undeclared visible `provider_id`, missing metadata, metadata errors and nontransactional tables reject deletion. Every supported child relationship blocks deletion when rows exist, including CASCADE/SET NULL relationships. Confirm through code/schema review that no additional application-only or differently named unkeyed provider relationships exist before enabling the flag. Do not permit schema DDL during deletion operations. Restricted metadata cannot establish absence of invisible dependencies. Audit history and CMS media are retained, and deletion/audit changes are transactional with provider locking. Tests use synthetic local records only.
+
+Provider/API acknowledgments are checked for the expected endpoint shape and ID. A lost, malformed, timed-out or server-error write response triggers an authoritative GET, never an automatic repeat write. If GET fails, writes stay blocked until an explicit successful recheck. A successful GET showing matching values confirms current state; differing values require review and a deliberate retry. This is reconciliation, not server idempotency or historical proof that the request never committed. Request deadlines are 30 seconds and media uploads 90 seconds; upload cancellation/unmount resets loading state and ignores late responses. An uncertain upload may leave an unassigned private media file; review media/audit state before explicitly uploading again. Existing upload validation, reference checks and private media delivery remain enforced.
+
+Production errors return a generic message plus `request_id`/`X-Request-ID`, with allowlisted database categories in logs and no raw SQL, credentials or request bodies. Request IDs are server-generated by default. Keep `TRUST_REQUEST_ID_HEADER=false`; enable only if a verified proxy strips public headers and supplies canonical UUIDs. Store server logs privately and use request references to investigate errors.
+
+All production uploads, migrations, cache changes, maintenance changes and smoke-test writes require the owner's approved change window and secure access. Existing production data must be preserved. Use only explicitly disposable, approved test records for write/delete smoke tests; never delete HSBC or any real provider.
+
 Target: **https://globallinkmultiservice.in**. This guide is for the owner to execute manually. Codex has not accessed hPanel, uploaded anything, changed DNS or deployed the application during this manual-preparation task. The screenshot establishes an active domain in the owner's account, not PHP hosting compatibility. The previously observed Marketing Agency website must be recoverably backed up before replacement.
 
 Approved application rollback commit: `410e6f28a57f5787b0dc88831ba3e952b766ae51`. Phase 7 preparation continues from `b0d6d0b7de9c2b21f2833b7bd35cac6c8fd4c2ef`. Keep the old application/site backup separately: these Git commits are not production database backups.
 
 ## Package and exact directory layouts
 
-`dist/hostinger/globallink-production.zip` contains:
+The newly generated package (not the historical `dist/hostinger/globallink-production.zip`) contains:
 
-- `globallink/backend`: Laravel source, seven migrations, approved CatalogueSeeder, production vendor dependencies, empty writable-directory scaffolding, original Laravel public entry and `production.env.example`.
+- `globallink/backend`: Laravel source, eight migrations, approved CatalogueSeeder, private tests, production vendor dependencies, empty writable-directory scaffolding, original Laravel public entry and `production.env.example`.
 - `globallink/frontend/dist/.vite/manifest.json`: private Vite manifest.
 - `public_html`: hashed frontend assets, favicon, reviewed .htaccess/.user.ini and a prepared public entry pointing to the private sibling backend.
 - `DEPLOYMENT_README.md` and `HOSTINGER_MANUAL_CHECKLIST.md`: instructions; keep these outside the web root.
@@ -59,7 +87,7 @@ If File Manager cannot access a private parent directory or the selected product
 
 5. **Create the dedicated MySQL database.** In hPanel Databases → Management (label may vary), create a new database and user for this Laravel installation, using a strong private password. Grant only the required application/migration privileges on that database. Record its actual prefixed name, user, host and port privately. MySQL 8.0 was locally qualified; verify actual host compatibility and utf8mb4. Do not assume DB_HOST is a public DNS address or copy development port 3312. Existing Global Link data must be preserved rather than overwritten.
 
-6. **Upload the ZIP privately.** Download/use `dist/hostinger/globallink-production.zip` and its adjacent SHA256 receipt. In File Manager upload into a new private staging directory under the domain's parent, outside public_html. Compare its SHA-256 with the receipt before extracting. Do not temporarily publish the package ZIP. hPanel upload/browser size limits and private-folder access must be verified on your account.
+6. **Upload the ZIP privately.** Use the fresh uniquely named ZIP identified in the final release report and its adjacent SHA-256 receipt. In File Manager upload into a new private staging directory under the domain's parent, outside public_html. Compare its SHA-256 with the receipt before extracting. Do not temporarily publish the package ZIP. hPanel upload/browser size limits and private-folder access must be verified on your account.
 
 7. **Extract and place Laravel files.** Extract into the private staging directory. Inspect the listed folders before moving anything. Place globallink/backend and its sibling frontend directory at the exact private layout above. Production vendor is already included; do not run Composer update. Keep the extracted guide/checklist and receipts private. Do not overwrite existing `.env` or private CMS files when redeploying.
 
@@ -71,7 +99,7 @@ If File Manager cannot access a private parent directory or the selected product
 
 11. **Configure MySQL privately.** Set DB_CONNECTION=mysql, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME and DB_PASSWORD to the exact database created/verified in step 5. Leave no REPLACE_WITH placeholders. Do not print database config or passwords. Confirm identity in hPanel/phpMyAdmin and record a safe private table/count inventory and backup status. MySQL password/connection failures must be fixed privately rather than enabling debug.
 
-12. **Run safe migrations.** From globallink/backend run `php artisan migrate:status`; inspect the selected schema and backup first. A genuinely new schema may report the migration table does not exist. Then run `php artisan migrate --force` followed by `php artisan migrate:status`. Expect all seven existing migrations marked Ran. Never run migrate:fresh, db:wipe or broad rollback. No new Phase 7 migration exists.
+12. **Inspect migration history and physical schema first.** Expect eight migrations after this release. For an existing installation with the first seven already applied, if and only if the description column and migration are both absent and the additive change has approval, run `php artisan migrate --path=database/migrations/2026_10_13_130001_add_description_to_bank_service_details.php --force`, then check `migrate:status` and the nullable TEXT column again. If both are already present and compatible, skip migration. Any mismatch requires reviewed reconciliation. A verified empty installation may run all eight with separately approved `php artisan migrate --force`. Never run migrate:fresh, db:wipe or broad rollback; never seed an existing database.
 
 13. **Initialize or preserve approved data.** Only for a verified empty installation after migrations, run `php artisan db:seed --class='Database\Seeders\CatalogueSeeder' --force` (in a shell use the quoted class form below). It inserts missing approved catalogue records without overwriting existing values. Expected baseline: categories 5, services 32, service_content_items 52, providers 8, bank_service_details 8, faqs 4, site_settings 10. Use phpMyAdmin SELECT COUNT(*) on these tables to verify. Do not seed a populated production schema blindly. If the approved local CMS/enquiry/history is the initial data source, transfer it privately into a verified dedicated empty schema instead of replacing it with seed defaults; export/import with tested backups and exact database identity, exclude ephemeral sessions/cache and never publish the dump. The package deliberately contains no contact data; the existing legitimate visitor enquiry remains local until you safely transfer it. For an already live Global Link database preserve all CMS and enquiries, including new live arrivals.
 
@@ -113,7 +141,8 @@ All server commands run in the private `globallink/backend` directory with the a
 php -v
 php -m
 php artisan migrate:status
-php artisan migrate --force
+# Existing installation: only if absent, compatible history verified, backed up and approved:
+php artisan migrate --path=database/migrations/2026_10_13_130001_add_description_to_bank_service_details.php --force
 php artisan migrate:status
 # Only a verified empty installation; quote the class to preserve backslashes:
 php artisan db:seed --class='Database\Seeders\CatalogueSeeder' --force
@@ -125,7 +154,7 @@ php artisan route:cache
 php artisan view:cache
 ```
 
-Expect PHP 8.4+, all seven migrations Ran, successful seed only when intended, and successful cache messages. Verify bootstrap/cache/config.php and routes-v7.php exist after caching; compiled views are generated under storage/framework/views. Do not display their contents, which may contain secrets. Confirm writable directories through File Manager permissions and an actual controlled CMS upload; never expose diagnostic files.
+Expect PHP 8.4+, all eight migrations Ran, successful seed only for a verified empty installation, and successful cache messages. Verify bootstrap/cache/config.php and routes-v7.php exist after caching; compiled views are generated under storage/framework/views. Do not display their contents, which may contain secrets. Confirm writable directories through File Manager permissions and an actual controlled CMS upload; never expose diagnostic files.
 
 Run these **from your own Windows PowerShell**, after deployment, with curl.exe (not PowerShell's curl alias). These are read-only except the empty invalid POST that must fail CSRF without creating a record:
 
@@ -180,7 +209,7 @@ UNION ALL SELECT 'site_settings', COUNT(*) FROM site_settings;
 SELECT migration, batch FROM migrations ORDER BY id;
 ```
 
-Expected migration names: 0001_01_01_000000_create_users_table; 0001_01_01_000001_create_cache_table; 0001_01_01_000002_create_jobs_table; 2026_10_06_075942_create_public_catalogue; 2026_10_06_082727_extend_catalogue_for_admin_cms; 2026_10_06_132218_create_enquiry_management_tables; 2026_10_06_144624_add_lead_source_to_enquiries_table. Batch numbers may legitimately differ. Baseline counts apply to a fresh installation; existing edited/published data must not be reset merely to match them.
+Expected migration names: 0001_01_01_000000_create_users_table; 0001_01_01_000001_create_cache_table; 0001_01_01_000002_create_jobs_table; 2026_10_06_075942_create_public_catalogue; 2026_10_06_082727_extend_catalogue_for_admin_cms; 2026_10_06_132218_create_enquiry_management_tables; 2026_10_06_144624_add_lead_source_to_enquiries_table; 2026_10_13_130001_add_description_to_bank_service_details. Batch numbers may legitimately differ. Baseline counts apply to a fresh installation; existing edited/published data must not be reset merely to match them.
 
 If the application has no lead-deletion UI, an owner with a verified backup can use a private transaction for **one exact previously recorded fictional lead**. Replace the placeholders with that verified QA identity; never use this against a real visitor or a name-prefix set:
 

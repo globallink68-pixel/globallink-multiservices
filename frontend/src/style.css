@@ -1655,10 +1655,20 @@ details[open] .faq-plus {
   transform: rotate(6deg);
 }
 .provider-logo {
+  display: block;
+  width: 100px;
   max-width: 100px;
   height: 45px;
   object-fit: contain;
   margin-bottom: 14px;
+}
+.provider-logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #35629c;
+  background: #edf4ff;
+  border-radius: 6px;
 }
 .optional-document {
   display: inline-block;

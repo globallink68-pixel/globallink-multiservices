@@ -18,6 +18,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { adminApi, AdminError } from "./api";
+import { matchesSubmission } from "./contracts";
 import { EnquiryList, EnquiryDetail } from "./Enquiries";
 import "./admin.css";
 import FormFeedback from "./FormFeedback";
@@ -45,7 +46,10 @@ function ErrorBox({ error }: { error: unknown }) {
   const e = error as AdminError;
   return (
     <FormFeedback
-      message={e.message ?? "Something went wrong."}
+      message={
+        (e.message ?? "Something went wrong.") +
+        (e.requestId ? " Reference: " + e.requestId : "")
+      }
       errors={e.errors}
     />
   );
@@ -324,17 +328,26 @@ function Protected() {
             <Route path="enquiries" element={<EnquiryList />} />
             <Route path="enquiries/:reference" element={<EnquiryDetail />} />
             <Route path="services" element={<ServiceList />} />
-            <Route path="services/new" element={<ServiceEditor />} />
-            <Route path="services/:id/edit" element={<ServiceEditor />} />
+            <Route
+              path="services/new"
+              element={<ServiceEditor key={location.pathname} />}
+            />
+            <Route
+              path="services/:id/edit"
+              element={<ServiceEditor key={location.pathname} />}
+            />
             <Route
               path="categories"
-              element={<RecordManager kind="categories" />}
+              element={<RecordManager key="categories" kind="categories" />}
             />
             <Route
               path="providers"
-              element={<RecordManager kind="providers" />}
+              element={<RecordManager key="providers" kind="providers" />}
             />
-            <Route path="faqs" element={<RecordManager kind="faqs" />} />
+            <Route
+              path="faqs"
+              element={<RecordManager key="faqs" kind="faqs" />}
+            />
             <Route path="settings" element={<Settings />} />
             <Route path="audit-logs" element={<Audit />} />
             <Route path="*" element={<h1>Workspace page not found</h1>} />
@@ -374,7 +387,15 @@ function useLoad<T>(path: string) {
       alive = false;
     };
   }, [path, version]);
-  return { data, error, reload: () => setVersion((v) => v + 1) };
+  return {
+    data,
+    error,
+    reload: () => setVersion((v) => v + 1),
+    replace: (next: T) => {
+      setData(next);
+      setError(undefined);
+    },
+  };
 }
 function Dashboard() {
   const { data, error } = useLoad<Row>("/dashboard");
@@ -682,13 +703,26 @@ function ImageField({
   label,
   value,
   onChange,
+  onBusyChange,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const activeUpload = useRef<AbortController | null>(null);
+  const uploadCallbacks = useRef({ onChange, onBusyChange });
+  uploadCallbacks.current = { onChange, onBusyChange };
+  useEffect(
+    () => () => {
+      activeUpload.current?.abort();
+      activeUpload.current = null;
+      uploadCallbacks.current.onBusyChange?.(false);
+    },
+    [],
+  );
   return (
     <div className="admin-image-field">
       <label>
@@ -699,19 +733,46 @@ function ImageField({
           disabled={busy}
           onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (!file) return;
+            if (!file || activeUpload.current) return;
+            const controller = new AbortController();
+            activeUpload.current = controller;
+            const input = e.target;
             const form = new FormData();
             form.append("image", file);
             setBusy(true);
+            onBusyChange?.(true);
             setError(undefined);
             try {
-              const d = await adminApi<{ url: string }>("/media", "POST", form);
-              onChange(d.url);
+              const d = await adminApi<{ url: string }>(
+                "/media",
+                "POST",
+                form,
+                { signal: controller.signal },
+              );
+              if (
+                activeUpload.current === controller &&
+                !controller.signal.aborted
+              )
+                uploadCallbacks.current.onChange(d.url);
             } catch (e) {
-              setError(e);
+              if (activeUpload.current === controller)
+                setError(
+                  e instanceof AdminError && e.outcome === "unknown"
+                    ? new AdminError(
+                        e.status,
+                        {},
+                        "Upload result could not be confirmed. It may have completed on the server. No image was assigned; review uploaded media before an explicit retry.",
+                        "unknown",
+                      )
+                    : e,
+                );
             } finally {
-              setBusy(false);
-              e.target.value = "";
+              if (activeUpload.current === controller) {
+                activeUpload.current = null;
+                setBusy(false);
+                uploadCallbacks.current.onBusyChange?.(false);
+                input.value = "";
+              }
             }
           }}
         />
@@ -720,13 +781,18 @@ function ImageField({
         JPEG, PNG or WebP. Maximum 2 MB / 4 million pixels. Metadata is removed.
       </small>
       {busy && <p role="status">Uploading image…</p>}
+      {busy && (
+        <button type="button" onClick={() => activeUpload.current?.abort()}>
+          Cancel upload
+        </button>
+      )}
       {value && (
         <div>
           <img
             src={value.replace("/api/media/", "/api/admin/media/")}
             alt={label + " preview"}
           />
-          <button type="button" onClick={() => onChange("")}>
+          <button type="button" disabled={busy} onClick={() => onChange("")}>
             Remove image from content
           </button>
         </div>
@@ -841,6 +907,12 @@ function ServiceEditor() {
   const [error, setError] = useState<unknown>();
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const pendingSave = useRef(false);
+  const uncertainSave = useRef(false);
+  const [serviceRecovery, setServiceRecovery] = useState<Row | null>(null);
+  const [checkingService, setCheckingService] = useState(false);
+  const [uploadStates, setUploadStates] = useState<Record<string, boolean>>({});
+  const uploadBusy = Object.values(uploadStates).some(Boolean);
   const nav = useNavigate();
   useEffect(() => {
     if (loaded)
@@ -874,43 +946,95 @@ function ServiceEditor() {
     setData((d) => (d ? { ...d, [key]: value } : d));
     setSaved(false);
   }
+  async function reconcileService(submitted: Row) {
+    setCheckingService(true);
+    try {
+      let target = id;
+      if (!target) {
+        const services = await adminApi<Row[]>("/services");
+        target = services.find(
+          (service) => service.slug === submitted.slug,
+        )?.id;
+      }
+      const current = target
+        ? await adminApi<Row>("/services/" + target)
+        : null;
+      uncertainSave.current = false;
+      setServiceRecovery(null);
+      if (current && matchesSubmission(current, submitted)) {
+        setData(current);
+        setSaved(true);
+        setError(undefined);
+        if (!id)
+          nav("/admin/services/" + current.id + "/edit", { replace: true });
+      } else {
+        setError(
+          new AdminError(
+            0,
+            {},
+            "Server state was reloaded. The submitted change is not reflected in the latest service. Review server state before explicitly retrying; no save was automatically repeated.",
+          ),
+        );
+      }
+    } catch {
+      setError(
+        new AdminError(
+          0,
+          {},
+          "The service result is still unknown. Recheck server state before retrying any save.",
+          "unknown",
+        ),
+      );
+    } finally {
+      setCheckingService(false);
+    }
+  }
   async function save(e: FormEvent) {
     e.preventDefault();
-    if (!data) return;
-    if (
-      !!data.is_published !== !!(id && loaded?.is_published) &&
-      !(await confirmChange(
-        data.is_published
-          ? "Publish this service and its saved content publicly?"
-          : "Unpublish this service?",
-      ))
-    )
+    if (!data || pendingSave.current || uncertainSave.current || uploadBusy)
       return;
+    pendingSave.current = true;
+    const submitted = {
+      ...data,
+      providers: data.providers.map((provider: Row) => ({
+        ...provider,
+        eligibility_overrides: provider.eligibility_overrides
+          .map((line: string) => line.trim())
+          .filter(Boolean),
+        document_overrides: provider.document_overrides
+          .map((line: string) => line.trim())
+          .filter(Boolean),
+      })),
+    };
     setBusy(true);
     setError(undefined);
     try {
+      if (
+        !!data.is_published !== !!(id && loaded?.is_published) &&
+        !(await confirmChange(
+          data.is_published
+            ? "Publish this service and its saved content publicly?"
+            : "Unpublish this service?",
+        ))
+      )
+        return;
       const result = await adminApi<Row>(
         id ? "/services/" + id : "/services",
         id ? "PUT" : "POST",
-        {
-          ...data,
-          providers: data.providers.map((provider: Row) => ({
-            ...provider,
-            eligibility_overrides: provider.eligibility_overrides
-              .map((line: string) => line.trim())
-              .filter(Boolean),
-            document_overrides: provider.document_overrides
-              .map((line: string) => line.trim())
-              .filter(Boolean),
-          })),
-        },
+        submitted,
       );
       setData(result);
       setSaved(true);
       if (!id) nav("/admin/services/" + result.id + "/edit", { replace: true });
     } catch (e) {
       setError(e);
+      if (e instanceof AdminError && e.outcome === "unknown") {
+        uncertainSave.current = true;
+        setServiceRecovery(submitted);
+        await reconcileService(submitted);
+      }
     } finally {
+      pendingSave.current = false;
       setBusy(false);
     }
   }
@@ -955,7 +1079,10 @@ function ServiceEditor() {
               {data.is_published ? "Published" : "Draft"}
             </span>
             <span>{data.title || "Untitled service"}</span>
-            <button className="admin-primary" disabled={busy}>
+            <button
+              className="admin-primary"
+              disabled={busy || uploadBusy || !!serviceRecovery}
+            >
               {busy ? "Saving…" : "Save service"}
             </button>
           </div>
@@ -977,6 +1104,17 @@ function ServiceEditor() {
               </button>
             ))}
           </nav>
+          {serviceRecovery && (
+            <button
+              type="button"
+              disabled={checkingService}
+              onClick={() => reconcileService(serviceRecovery)}
+            >
+              {checkingService
+                ? "Checking server state…"
+                : "Recheck service state"}
+            </button>
+          )}
           <div className="admin-panel">
             {tab === "General" && (
               <>
@@ -1048,11 +1186,19 @@ function ServiceEditor() {
                 </div>
                 <ImageField
                   label="Service icon image"
+                  key={"icon:" + (id ?? "new")}
+                  onBusyChange={(active) =>
+                    setUploadStates((current) => ({ ...current, icon: active }))
+                  }
                   value={data.icon_path ?? ""}
                   onChange={(v) => change("icon_path", v)}
                 />
                 <ImageField
                   label="Hero image"
+                  key={"hero:" + (id ?? "new")}
+                  onBusyChange={(active) =>
+                    setUploadStates((current) => ({ ...current, hero: active }))
+                  }
                   value={data.hero_image ?? ""}
                   onChange={(v) => change("hero_image", v)}
                 />
@@ -1223,6 +1369,11 @@ function ServiceEditor() {
                       type: "lines",
                     },
                     {
+                      key: "description",
+                      label: "Service-specific provider description",
+                      type: "textarea",
+                    },
+                    {
                       key: "fee_information",
                       label: "Confirmed provider fee information",
                       type: "textarea",
@@ -1290,16 +1441,79 @@ function ServiceEditor() {
   );
 }
 function RecordManager({ kind }: { kind: string }) {
-  const { data, error, reload } = useLoad<Row[]>("/" + kind);
+  const confirmChange = useContext(Confirmation);
+  const pendingWrite = useRef(false);
+  const { data, error, reload, replace } = useLoad<Row[]>("/" + kind);
   const { data: services } = useLoad<Row[]>("/services");
   const [edit, setEdit] = useState<Row | null>(null);
   const [saveError, setSaveError] = useState<unknown>();
   const [success, setSuccess] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const [deleteError, setDeleteError] = useState<unknown>();
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const uncertainWrite = useRef(false);
+  const [recovery, setRecovery] = useState<{
+    operation: "save" | "delete";
+    id?: number;
+    values?: Row;
+  } | null>(null);
+  const [recovering, setRecovering] = useState(false);
+  async function reconcile(pending: NonNullable<typeof recovery>) {
+    setRecovering(true);
+    try {
+      const rows = await adminApi<Row[]>("/" + kind);
+      replace(rows);
+      const row = pending.id
+        ? rows.find((r) => r.id === pending.id)
+        : rows.find(
+            (r) => r.code === String(pending.values?.code).trim().toUpperCase(),
+          );
+      uncertainWrite.current = false;
+      setRecovery(null);
+      if (pending.operation === "delete" && !row) {
+        setDeleted(true);
+        setDeleteError(undefined);
+        if (edit?.id === pending.id) setEdit(null);
+      } else if (
+        pending.operation === "save" &&
+        row &&
+        matchesSubmission(row, pending.values)
+      ) {
+        setEdit(null);
+        setSuccess(true);
+        setSaveError(undefined);
+      } else {
+        const feedback = new AdminError(
+          0,
+          {},
+          "Server records were refreshed. The submitted change is not reflected in the latest state. Review the records before explicitly retrying; no write was automatically repeated.",
+        );
+        if (pending.operation === "delete") setDeleteError(feedback);
+        else setSaveError(feedback);
+      }
+    } catch {
+      const feedback = new AdminError(
+        0,
+        {},
+        "The result is still unknown because server records could not be reloaded. Recheck server state before retrying any write.",
+        "unknown",
+      );
+      if (pending.operation === "delete") setDeleteError(feedback);
+      else setSaveError(feedback);
+    } finally {
+      setRecovering(false);
+    }
+  }
   useEffect(() => {
     setEdit(null);
     setSaveError(undefined);
     setSuccess(false);
+    setDeleted(false);
+    setDeleteError(undefined);
+    uncertainWrite.current = false;
+    setRecovery(null);
   }, [kind]);
   const label =
     kind === "faqs" ? "FAQs" : kind[0].toUpperCase() + kind.slice(1);
@@ -1363,6 +1577,7 @@ function RecordManager({ kind }: { kind: string }) {
       <Heading title={label}>
         <button
           className="admin-primary"
+          disabled={busy || uploadBusy || deleting !== null || !!recovery}
           onClick={() => {
             setEdit({
               name: "",
@@ -1386,6 +1601,39 @@ function RecordManager({ kind }: { kind: string }) {
         </button>
       </Heading>
       <ErrorBox error={error} />
+      <ErrorBox error={deleteError} />
+      {kind === "providers" &&
+        data?.some((row) => row.deletion_available === false) && (
+          <p>
+            Permanent deletion is disabled until the supported database contract
+            is verified. Deactivation remains available.
+          </p>
+        )}
+      {recovery && (
+        <button
+          type="button"
+          disabled={recovering}
+          onClick={() => reconcile(recovery)}
+        >
+          {recovering ? "Checking server state…" : "Recheck server state"}
+        </button>
+      )}
+      {error && (
+        <button type="button" onClick={reload}>
+          Reload records
+        </button>
+      )}
+      {success && error && (
+        <p>
+          Save was confirmed, but records could not be refreshed. Reload records
+          before another change.
+        </p>
+      )}
+      {deleted && (
+        <p className="admin-success" role="status">
+          Provider deleted.
+        </p>
+      )}
       {success && (
         <p className="admin-success" role="status">
           {label} saved.
@@ -1410,6 +1658,7 @@ function RecordManager({ kind }: { kind: string }) {
                 </small>
               </div>
               <button
+                disabled={busy || uploadBusy || deleting !== null || !!recovery}
                 onClick={() => {
                   setEdit({ ...r });
                   setSuccess(false);
@@ -1419,6 +1668,55 @@ function RecordManager({ kind }: { kind: string }) {
               >
                 Edit
               </button>
+              {kind === "providers" && (
+                <button
+                  type="button"
+                  disabled={
+                    busy ||
+                    uploadBusy ||
+                    deleting !== null ||
+                    !!recovery ||
+                    r.deletion_available === false
+                  }
+                  aria-label={"Delete " + r.name}
+                  onClick={async () => {
+                    if (pendingWrite.current || uncertainWrite.current) return;
+                    pendingWrite.current = true;
+                    setDeleting(r.id);
+                    setDeleteError(undefined);
+                    setDeleted(false);
+                    setSuccess(false);
+                    try {
+                      if (
+                        !(await confirmChange(
+                          `Permanently delete ${r.name}? Providers associated with a service cannot be deleted. Audit history and uploaded media will be retained. You can deactivate the provider instead.`,
+                        ))
+                      )
+                        return;
+                      await adminApi("/providers/" + r.id, "DELETE");
+                      if (edit?.id === r.id) setEdit(null);
+                      setDeleted(true);
+                      reload();
+                    } catch (e) {
+                      setDeleteError(e);
+                      if (e instanceof AdminError && e.outcome === "unknown") {
+                        const pending = {
+                          operation: "delete" as const,
+                          id: r.id,
+                        };
+                        uncertainWrite.current = true;
+                        setRecovery(pending);
+                        await reconcile(pending);
+                      }
+                    } finally {
+                      pendingWrite.current = false;
+                      setDeleting(null);
+                    }
+                  }}
+                >
+                  {deleting === r.id ? "Deleting…" : "Delete"}
+                </button>
+              )}
             </article>
           ))}
         </section>
@@ -1427,6 +1725,13 @@ function RecordManager({ kind }: { kind: string }) {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (
+                  pendingWrite.current ||
+                  uploadBusy ||
+                  uncertainWrite.current
+                )
+                  return;
+                pendingWrite.current = true;
                 setSaveError(undefined);
                 setBusy(true);
                 const values = Object.fromEntries(
@@ -1445,7 +1750,22 @@ function RecordManager({ kind }: { kind: string }) {
                   reload();
                 } catch (e) {
                   setSaveError(e);
+                  if (
+                    e instanceof AdminError &&
+                    e.outcome === "unknown" &&
+                    kind === "providers"
+                  ) {
+                    const pending = {
+                      operation: "save" as const,
+                      id: edit.id,
+                      values,
+                    };
+                    uncertainWrite.current = true;
+                    setRecovery(pending);
+                    await reconcile(pending);
+                  }
                 } finally {
+                  pendingWrite.current = false;
                   setBusy(false);
                 }
               }}
@@ -1454,21 +1774,37 @@ function RecordManager({ kind }: { kind: string }) {
                 {edit.id ? "Edit" : "New"}{" "}
                 {kind === "faqs" ? "FAQ" : kind.slice(0, -1)}
               </h2>
+              {kind === "providers" && (
+                <p>
+                  Use a unique short code with letters, digits, underscores or
+                  hyphens. Codes are saved in uppercase. Display order must be a
+                  whole number from 0 to 10000. After saving, associate this
+                  provider in the intended service’s Providers tab.
+                </p>
+              )}
               <ErrorBox error={saveError} />
               {fields.map((f) => (
                 <Field
                   key={f.key}
                   spec={f}
                   value={edit[f.key]}
-                  onChange={(v) => setEdit({ ...edit, [f.key]: v })}
+                  onChange={(v) =>
+                    setEdit((current) => current && { ...current, [f.key]: v })
+                  }
                 />
               ))}
               {kind === "providers" && (
                 <>
                   <ImageField
+                    key={kind + ":" + (edit.id ?? "new")}
                     label="Provider logo"
                     value={edit.logo_path ?? ""}
-                    onChange={(v) => setEdit({ ...edit, logo_path: v })}
+                    onBusyChange={setUploadBusy}
+                    onChange={(v) =>
+                      setEdit(
+                        (current) => current && { ...current, logo_path: v },
+                      )
+                    }
                   />
                   <p>
                     Provider labels do not establish official authorization or
@@ -1477,16 +1813,28 @@ function RecordManager({ kind }: { kind: string }) {
                 </>
               )}
               <div className="admin-actions">
-                <button className="admin-primary" disabled={busy}>
+                <button
+                  className="admin-primary"
+                  disabled={
+                    busy || uploadBusy || deleting !== null || !!recovery
+                  }
+                >
                   {busy ? "Saving…" : "Save record"}
                 </button>
-                <button type="button" onClick={() => setEdit(null)}>
+                <button
+                  type="button"
+                  disabled={
+                    busy || uploadBusy || deleting !== null || !!recovery
+                  }
+                  onClick={() => setEdit(null)}
+                >
                   Cancel
                 </button>
               </div>
               <p>
-                Deactivate records to remove them from public view. No
-                destructive category/provider deletion.
+                Deactivate records to remove them from public view. Only
+                providers without service associations can be permanently
+                deleted.
               </p>
             </form>
           ) : (

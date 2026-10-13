@@ -2,6 +2,20 @@
 
 Target: https://globallinkmultiservice.in. Follow HOSTINGER_DEPLOYMENT.md for exact paths, commands and expected results. Every box below is an owner action or actual-host verification; preparation by Codex does not check it automatically.
 
+## Provider release prerequisites (supersede original Phase 7 counts)
+
+- [ ] Complete actual Hostinger schema/runtime/backup acceptance before publishing; local tests alone do not establish production readiness.
+- [ ] Verify the new package receipt, all eight migrations, source hashes, manifest/assets and ZIP checksum; preserve the old ZIP.
+- [ ] Inspect both migration history and nullable TEXT description column; STOP on missing/incompatible or inconsistent schema/history.
+- [ ] Keep PROVIDER_PERMANENT_DELETE_ENABLED=false unless the documented supported deletion contract and complete visibility are independently verified. Never broaden shared-host privileges just to enable Delete. Verify InnoDB, all incoming FK shapes and application-only references; unsupported/invisible dependencies fail closed.
+- [ ] Keep TRUST_REQUEST_ID_HEADER=false unless a verified proxy replaces public headers. Check request IDs and safe diagnostics privately.
+- [ ] Verify unknown-write reconciliation and failed-GET write blocking; check upload timeout/cancellation, unmount, explicit retry and late-result handling using disposable approved fixtures.
+- [ ] Verify backups and rehearse restoration to a separate target, preserving current enquiries, providers, audit history, media and APP_KEY.
+- [ ] Obtain authorization for any necessary production migration; migrate before exposing new backend, never rerun an already-applied migration blindly.
+- [ ] Switch matching backend/manifest/assets; retain old hashed assets and private state. No reseeding or key rotation on redeployment.
+- [ ] Roll back application code independently; keep the additive description column/history and all description data.
+- [ ] Use approved disposable fixtures only for write smoke tests; never delete real providers.
+
 - [ ] 1. Select the correct website/domain; verify PHP hosting, MySQL, private-folder access and a private PHP CLI execution method.
 - [ ] 2. Create and verify a recoverable backup of the existing Marketing Agency site, including its domain-binding/restore procedure.
 - [ ] 3. Identify and back up all relevant existing databases; keep backups private and verify recovery before overwrite.
@@ -13,7 +27,7 @@ Target: https://globallinkmultiservice.in. Follow HOSTINGER_DEPLOYMENT.md for ex
 - [ ] 9. Copy production.env.example to private .env and enter correct production values privately; no unresolved placeholders or public env files.
 - [ ] 10. Generate a private APP_KEY for a new installation; preserve the existing key on redeployment.
 - [ ] 11. Configure verified MySQL values without printing secrets; confirm backup and protected-data snapshot.
-- [ ] 12. Inspect migration state, safely migrate --force, and verify all seven migrations Ran; no resets/wipes.
+- [ ] 12. Inspect history and physical column; skip already-applied compatible migration, or obtain approval and apply only the missing additive migration. Verify all eight Ran; no resets/wipes or description-column rollback.
 - [ ] 13. Seed only a verified empty installation, or preserve/transfer approved existing CMS/enquiry/history privately; verify 5 categories, 32 services, 52 items, 8 providers, 8 bank details, 4 FAQs and 10 settings.
 - [ ] 14. Verify private CMS storage, writable storage/bootstrap cache, least-privilege permissions and no public symlink; check controlled upload/re-encoding/reference gates.
 - [ ] 15. Verify real SSL, HTTP-to-HTTPS redirect, exact canonical origin/host, actual proxy detection, Secure cookies, no mixed content or loops.

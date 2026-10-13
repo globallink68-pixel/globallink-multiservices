@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Middleware\PublicSecurityHeaders;
+use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\RequireAdministrator;
+use App\Services\SafeDatabaseError;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(RequestCorrelation::class);
         $middleware->append(PublicSecurityHeaders::class);
         $middleware->trustProxies(at: [], headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO | Request::HEADER_X_FORWARDED_PORT);
         $middleware->alias(['admin' => RequireAdministrator::class]);
@@ -27,12 +31,22 @@ return Application::configure(basePath: dirname(__DIR__))
             if (app()->environment('production') && ($response->getStatusCode() >= 500 || (config('app.debug') && $response->getStatusCode() >= 400))) {
                 $response = response()->json(['message' => 'The request could not be completed.'], $response->getStatusCode());
             }
+            $id = request()->attributes->get('request_id');
+            if ($id) {
+                $response->headers->set('X-Request-ID', $id);
+                if ($response->getStatusCode() >= 400 && $response instanceof JsonResponse) {
+                    $data = $response->getData(true);
+                    if (is_array($data)) {
+                        $response->setData($data + ['request_id' => $id]);
+                    }
+                }
+            }
 
             return PublicSecurityHeaders::decorate(request(), $response);
         });
         $exceptions->report(function (Throwable $exception): ?bool {
             if (app()->environment('production')) {
-                Log::error('Application request failed.', ['exception_type' => $exception::class]);
+                Log::error('Application request failed.', array_filter(['request_id' => request()->attributes->get('request_id'), 'exception_type' => $exception::class, 'method' => request()->method(), 'route' => request()->route()?->uri(), 'database_error_category' => SafeDatabaseError::category($exception)], fn ($value) => $value !== null));
 
                 return false;
             }

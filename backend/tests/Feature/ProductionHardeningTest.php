@@ -90,14 +90,14 @@ class ProductionHardeningTest extends TestCase
         DB::disableQueryLog();
     }
 
-    public function test_production_exceptions_hide_details_and_log_only_exception_type(): void
+    public function test_production_exceptions_hide_details_and_log_safe_request_context(): void
     {
         Route::get('/api/failure-check', fn () => throw new \RuntimeException('secret-token contact@example.test'));
         $this->app['env'] = 'production';
         config(['app.debug' => false, 'app.url' => 'https://www.example.test']);
         Log::spy();
-        $this->getJson('https://www.example.test/api/failure-check')->assertStatus(500)->assertExactJson(['message' => 'The request could not be completed.'])->assertHeader('Cache-Control', 'no-store, private')->assertDontSee('secret-token')->assertDontSee('contact@example.test');
-        Log::shouldHaveReceived('error')->once()->with('Application request failed.', ['exception_type' => \RuntimeException::class]);
+        $response = $this->getJson('https://www.example.test/api/failure-check')->assertStatus(500)->assertJsonPath('message', 'The request could not be completed.')->assertJsonStructure(['request_id'])->assertHeader('Cache-Control', 'no-store, private')->assertDontSee('secret-token')->assertDontSee('contact@example.test');
+        Log::shouldHaveReceived('error')->once()->with('Application request failed.', ['request_id' => $response->json('request_id'), 'exception_type' => \RuntimeException::class, 'method' => 'GET', 'route' => 'api/failure-check']);
     }
 
     public function test_secure_http_only_session_cookie_and_mass_assignment_guard(): void

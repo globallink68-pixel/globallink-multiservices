@@ -334,6 +334,14 @@
   color: #566b84;
   font-size: 11px;
 }
+.admin-record > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-record > button {
+  flex-shrink: 0;
+}
 .admin-empty {
   padding: 50px 15px;
   text-align: center;

@@ -6,6 +6,39 @@ import EnquiryForm from "./EnquiryForm";
 import Seo from "./Seo";
 const ChatWidget = lazy(() => import("./ChatWidget"));
 const AdminApp = lazy(() => import("./admin/AdminApp"));
+function ProviderLogo({ name, path }: { name: string; path?: string | null }) {
+  const source = mediaSource(path);
+  const [failedSource, setFailedSource] = useState<string>();
+  return source && failedSource !== source ? (
+    <img
+      className="provider-logo"
+      src={source}
+      alt={name + " logo"}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailedSource(source)}
+    />
+  ) : (
+    <span
+      className="provider-logo provider-logo-fallback"
+      role="img"
+      aria-label="Provider logo unavailable"
+    >
+      <Icon name="bank" size={32} />
+    </span>
+  );
+}
+function providerDescription(
+  provider: NonNullable<Service["providers"]>[number],
+) {
+  const name = provider.name.trim().toLocaleLowerCase();
+  return (
+    [provider.service_description, provider.description]
+      .find((text) => text?.trim() && text.trim().toLocaleLowerCase() !== name)
+      ?.trim() ??
+    "Contact the team for current service availability and requirements."
+  );
+}
 function Faqs({ items }: { items: Site["faqs"] }) {
   return (
     <div className="faq-list">
@@ -633,18 +666,10 @@ function Detail({ site }: { site: Site }) {
               </p>
               <div className="provider-grid">
                 {s.providers.map((p) => (
-                  <article key={p.name}>
-                    {mediaSource(p.logo_path) && (
-                      <img
-                        className="provider-logo"
-                        src={mediaSource(p.logo_path)}
-                        alt={p.name + " logo"}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
+                  <article key={p.id ?? p.name}>
+                    <ProviderLogo name={p.name} path={p.logo_path} />
                     <h3>{p.name}</h3>
-                    {p.description && <p>{p.description}</p>}
+                    <p>{providerDescription(p)}</p>
                     {p.eligibility.length > 0 && (
                       <>
                         <h4>Eligibility</h4>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -73,6 +73,69 @@ function open(path = "/") {
     </MemoryRouter>,
   );
 }
+it("provider cards suppress repeated names and show an accessible missing-logo fallback", async () => {
+  const data = {
+    ...service,
+    providers: [
+      {
+        id: 7,
+        name: "HSBC Bank",
+        logo_path: null,
+        description: "HSBC Bank",
+        eligibility: [],
+        documents: [],
+        fee_information: null,
+        processing_notes: null,
+      },
+    ],
+  };
+  fetchMock.mockImplementation((url: string) =>
+    url === "/api/site" ? reply(site) : reply(data),
+  );
+  open("/services/website-development");
+  await screen.findByRole("heading", { name: "HSBC Bank" });
+  expect(screen.getAllByText("HSBC Bank")).toHaveLength(1);
+  expect(
+    screen.getByRole("img", { name: "Provider logo unavailable" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Contact the team for current service availability and requirements.",
+    ),
+  ).toBeInTheDocument();
+});
+it("uses service-specific descriptions and replaces failed logos with the fallback", async () => {
+  const data = {
+    ...service,
+    providers: [
+      {
+        id: 7,
+        name: "Test Bank",
+        logo_path: "/api/media/11111111-1111-1111-1111-111111111111",
+        service_description: "Specific service information",
+        description: "General provider information",
+        eligibility: [],
+        documents: [],
+        fee_information: null,
+        processing_notes: null,
+      },
+    ],
+  };
+  fetchMock.mockImplementation((url: string) =>
+    url === "/api/site" ? reply(site) : reply(data),
+  );
+  open("/services/website-development");
+  const logo = await screen.findByRole("img", { name: "Test Bank logo" });
+  expect(logo).toHaveAttribute("src", data.providers[0].logo_path);
+  expect(screen.getByText("Specific service information")).toBeInTheDocument();
+  expect(
+    screen.queryByText("General provider information"),
+  ).not.toBeInTheDocument();
+  fireEvent.error(logo);
+  expect(
+    screen.getByRole("img", { name: "Provider logo unavailable" }),
+  ).toBeInTheDocument();
+});
 it("homepage presents the brand and API-backed featured services", async () => {
   open();
   await screen.findByRole("heading", { name: /Grow your business/ });

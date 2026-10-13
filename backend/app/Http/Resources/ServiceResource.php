@@ -48,11 +48,13 @@ class ServiceResource extends JsonResource
                 ->where('d.service_id', $this->id)->where('p.is_active', true)
                 ->orderBy('p.sort_order')->orderBy('p.id')
                 ->get([
-                    'p.name', 'p.description', 'p.logo_path', 'd.notes', 'd.disclaimer', 'd.eligibility_overrides',
+                    'p.id', 'p.name', 'p.description', 'd.description as service_description', 'p.logo_path', 'd.notes', 'd.disclaimer', 'd.eligibility_overrides',
                     'd.document_overrides', 'd.fee_information', 'd.processing_notes',
                 ])
                 ->map(fn ($provider) => [
+                    'id' => $provider->id,
                     'name' => $provider->name,
+                    'service_description' => $provider->service_description,
                     'logo_path' => $provider->logo_path,
                     'notes' => $provider->notes,
                     'disclaimer' => $provider->disclaimer,

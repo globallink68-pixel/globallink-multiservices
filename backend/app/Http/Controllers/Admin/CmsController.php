@@ -7,6 +7,9 @@ use App\Http\Requests\Admin\SaveServiceRequest;
 use App\Models\Service;
 use App\Services\CmsAudit;
 use App\Services\EnquiryWorkflow;
+use App\Services\ProviderDeletionSafety;
+use App\Services\SafeDatabaseError;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +67,11 @@ class CmsController extends Controller
     {
         $v = $r->validated();
         $service = DB::transaction(function () use ($v, $id) {
+            $providerIds = array_column($v['providers'], 'provider_id');
+            $lockedProviders = DB::table('providers')->whereIn('id', $providerIds)->orderBy('id')->lockForUpdate()->get();
+            if ($lockedProviders->count() !== count($providerIds)) {
+                throw ValidationException::withMessages(['providers' => 'A selected provider no longer exists. Reload and try again.']);
+            }
             $s = $id ? Service::findOrFail($id) : new Service;
             $wasPublished = $s->is_published;
             $s->fill(array_diff_key($v, array_flip(['sections', 'items', 'fees', 'providers', 'faqs'])));
@@ -78,9 +86,11 @@ class CmsController extends Controller
                     DB::table($table)->insert($safe + ['service_id' => $s->id, 'sort_order' => $order, 'created_at' => now(), 'updated_at' => now()]);
                 }
             }
+            $existingDescriptions = DB::table('bank_service_details')->where('service_id', $s->id)->pluck('description', 'provider_id');
             DB::table('bank_service_details')->where('service_id', $s->id)->delete();
             foreach ($v['providers'] as $p) {
-                $safe = array_intersect_key($p, array_flip(['provider_id', 'fee_information', 'processing_notes', 'notes', 'disclaimer']));
+                $safe = array_intersect_key($p, array_flip(['provider_id', 'description', 'fee_information', 'processing_notes', 'notes', 'disclaimer']));
+                $safe += ['description' => $existingDescriptions[$p['provider_id']] ?? null];
                 DB::table('bank_service_details')->insert($safe + ['service_id' => $s->id, 'eligibility_overrides' => json_encode($p['eligibility_overrides']), 'document_overrides' => json_encode($p['document_overrides']), 'created_at' => now(), 'updated_at' => now()]);
             }
             CmsAudit::record($id ? 'updated' : 'created', 'service', $s->id);
@@ -126,7 +136,7 @@ class CmsController extends Controller
 
     public function providers(): JsonResponse
     {
-        return response()->json(['data' => DB::table('providers')->orderBy('sort_order')->orderBy('id')->get()]);
+        return response()->json(['data' => DB::table('providers')->orderBy('sort_order')->orderBy('id')->get()->map(fn ($provider) => (array) $provider + ['deletion_available' => (bool) config('provider_workflow.permanent_delete_enabled')])]);
     }
 
     public function saveProvider(Request $r, ?int $id = null): JsonResponse
@@ -134,9 +144,38 @@ class CmsController extends Controller
         if ($id) {
             abort_unless(DB::table('providers')->find($id), 404);
         }
+        if (is_string($r->input('code'))) {
+            $r->merge(['code' => strtoupper(trim($r->input('code')))]);
+        }
         $v = $r->validate(['name' => 'required|string|max:120', 'code' => ['required', 'string', 'max:40', 'regex:/^[A-Z0-9_-]+$/', Rule::unique('providers', 'code')->ignore($id)], 'description' => 'nullable|string|max:5000', 'logo_path' => ['nullable', 'string', SaveServiceRequest::mediaRule()], 'is_active' => 'required|boolean', 'sort_order' => 'required|integer|min:0|max:10000']);
 
-        return $this->saveRow('providers', 'provider', $v, $id);
+        try {
+            return $this->saveRow('providers', 'provider', $v, $id);
+        } catch (UniqueConstraintViolationException $exception) {
+            if (SafeDatabaseError::isProviderCodeConflict($exception)) {
+                throw ValidationException::withMessages(['code' => 'This provider code is already in use.']);
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function deleteProvider(int $id): JsonResponse
+    {
+        DB::transaction(function () use ($id): void {
+            $provider = DB::table('providers')->where('id', $id)->lockForUpdate()->first();
+            abort_unless($provider, 404, 'Provider not found.');
+            $links = DB::table('bank_service_details')->where('provider_id', $id)->count();
+            abort_if($links > 0, 409, 'This provider is associated with '.$links.' service(s). Deactivate it or remove its service associations before deleting.');
+            $references = app(ProviderDeletionSafety::class)->assertAvailable();
+            foreach ($references as $reference) {
+                abort_if(DB::table($reference['schema'].'.'.$reference['table'])->where($reference['column'], $id)->exists(), 409, 'This provider has dependent records. Deactivate it instead.');
+            }
+            CmsAudit::record('deleted', 'provider', $id);
+            DB::table('providers')->where('id', $id)->delete();
+        });
+
+        return response()->json(['data' => ['message' => 'Provider deleted.']]);
     }
 
     public function faqs(): JsonResponse
@@ -159,6 +198,7 @@ class CmsController extends Controller
         $id = DB::transaction(function () use ($table, $entity, $v, $id) {
             $v['updated_at'] = now();
             if ($id) {
+                abort_unless(DB::table($table)->where('id', $id)->lockForUpdate()->first(), 404);
                 DB::table($table)->where('id', $id)->update($v);
             } else {
                 $id = DB::table($table)->insertGetId($v + ['created_at' => now()]);

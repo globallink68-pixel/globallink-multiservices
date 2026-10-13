@@ -52,7 +52,8 @@ function api(url: string, options?: RequestInit) {
     authenticated = false;
     return reply({ message: "Signed out" });
   }
-  if (path === "/services") return reply([{ id: 1, title: "Bank CSP" }]);
+  if (path === "/services")
+    return reply([{ id: 1, title: "Bank CSP", slug: "bank-csp" }]);
   if (path === "/dashboard")
     return reply({
       total_services: 32,

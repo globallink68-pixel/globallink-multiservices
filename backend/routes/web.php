@@ -43,6 +43,7 @@ Route::prefix('api/admin')->group(function (): void {
             Route::post('/'.$path, [CmsController::class, 'save'.$type]);
             Route::put('/'.$path.'/{id}', [CmsController::class, 'save'.$type])->whereNumber('id');
         }
+        Route::delete('/providers/{id}', [CmsController::class, 'deleteProvider'])->whereNumber('id');
         Route::get('/settings', [CmsController::class, 'settings']);
         Route::put('/settings', [CmsController::class, 'saveSettings']);
         Route::get('/audit-logs', [CmsController::class, 'audit']);

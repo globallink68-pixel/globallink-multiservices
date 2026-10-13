@@ -34,7 +34,9 @@ export type Service = {
     notes: string | null;
   }[];
   providers?: {
+    id?: number;
     name: string;
+    service_description?: string | null;
     logo_path?: string | null;
     notes?: string | null;
     disclaimer?: string | null;
