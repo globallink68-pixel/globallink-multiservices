@@ -1,0 +1,162 @@
+{
+  "bank-csp": {
+    "alt": "Banking clerk assisting a customer at a service desk",
+    "audience": "Local shop owners and entrepreneurs exploring an assisted banking outlet",
+    "topics": "Outlet location, customer demand and provider-specific operating requirements"
+  },
+  "insurance-posp-id": {
+    "alt": "Insurance advisor reviewing documents with a customer",
+    "audience": "People exploring insurance distribution as a point-of-sales person",
+    "topics": "Training, registration steps and permitted product categories"
+  },
+  "loan-dsa-id": {
+    "alt": "Business owner discussing a loan at a desk",
+    "audience": "Individuals or businesses exploring loan referral work",
+    "topics": "Lender criteria, referral responsibilities and application handling"
+  },
+  "credit-card-dsa-id": {
+    "alt": "Advisor discussing a credit card with a customer",
+    "audience": "Individuals or businesses exploring credit-card referrals",
+    "topics": "Issuer criteria, permitted acquisition channels and document handling"
+  },
+  "digital-account-opening-id": {
+    "alt": "Customer and clerk using a tablet at a service desk",
+    "audience": "Outlet operators exploring assisted digital account opening",
+    "topics": "Supported accounts, identity checks and provider onboarding"
+  },
+  "white-label-atm": {
+    "alt": "Freestanding ATM at a storefront",
+    "audience": "Site owners exploring an ATM installation",
+    "topics": "Footfall, site readiness, security and operator requirements"
+  },
+  "aeps": {
+    "alt": "Fingerprint reader at a service counter",
+    "audience": "Service outlets exploring Aadhaar-enabled transactions",
+    "topics": "Supported transaction types, biometric equipment and provider terms"
+  },
+  "dmt": {
+    "alt": "Two phones illustrating domestic money transfer",
+    "audience": "Retail outlets serving customers who need domestic transfers",
+    "topics": "Sender registration, transfer limits, charges and receipt handling"
+  },
+  "micro-atm": {
+    "alt": "Merchant holding a portable card terminal",
+    "audience": "Shops exploring assisted transactions from a portable terminal",
+    "topics": "Device compatibility, supported transactions and settlement terms"
+  },
+  "mobile-recharge": {
+    "alt": "Smartphone illustrating prepaid mobile top-ups",
+    "audience": "Retailers serving customers who need mobile top-ups",
+    "topics": "Supported operators, recharge options and failed transaction handling"
+  },
+  "bbps": {
+    "alt": "Utility bills and a phone used for payment",
+    "audience": "Outlets exploring assisted bill payments",
+    "topics": "Available billers, transaction receipts and settlement"
+  },
+  "pan-services": {
+    "alt": "Tax identification paperwork on a desk",
+    "audience": "Customers and outlets seeking information about PAN assistance",
+    "topics": "Application type, identity requirements and authorized submission channels"
+  },
+  "irctc-related-service": {
+    "alt": "Passenger train at an Indian railway station",
+    "audience": "Businesses exploring assisted rail booking",
+    "topics": "Applicable authorization, booking rules and cancellation procedures"
+  },
+  "retailer-id": {
+    "alt": "Retailer working behind a shop counter",
+    "audience": "Shop owners exploring additional customer-facing digital services",
+    "topics": "Available services, onboarding documents and operating requirements"
+  },
+  "distributor-id": {
+    "alt": "Wholesale cartons in a distribution warehouse",
+    "audience": "Operators exploring support for a network of retail outlets",
+    "topics": "Coverage area, retailer onboarding responsibilities and support"
+  },
+  "travel-agency-id": {
+    "alt": "Travel agent working beside maps and luggage",
+    "audience": "Businesses exploring assisted travel booking",
+    "topics": "Booking scope, agency onboarding and customer support"
+  },
+  "mineral-water-plant": {
+    "alt": "Stainless steel water treatment and bottling equipment",
+    "audience": "Entrepreneurs evaluating a packaged water facility",
+    "topics": "Capacity, site utilities, water testing and applicable approvals"
+  },
+  "solar-energy-system": {
+    "alt": "Technician inspecting rooftop solar panels",
+    "audience": "Property owners and businesses evaluating solar energy",
+    "topics": "Electricity demand, roof or site conditions and installation scope"
+  },
+  "website-development": {
+    "alt": "Desktop and phone displaying a responsive business website",
+    "audience": "Businesses that need a first website, a redesign or an online store",
+    "topics": "Responsive page layouts, navigation, enquiry integration and hosting options"
+  },
+  "mobile-app-development": {
+    "alt": "Smartphones displaying mobile app interfaces",
+    "audience": "Businesses with a customer or staff workflow suited to a mobile app",
+    "topics": "User journeys, supported devices, integrations and release requirements"
+  },
+  "billing-software": {
+    "alt": "Invoice dashboard and receipt printer",
+    "audience": "Shops and teams looking to streamline invoicing",
+    "topics": "Invoice formats, product records, reporting and data export"
+  },
+  "school-management-system": {
+    "alt": "School workstation showing an administration dashboard",
+    "audience": "Schools coordinating everyday office and communication workflows",
+    "topics": "Attendance, records, role access and communication requirements"
+  },
+  "crm-software": {
+    "alt": "Screen displaying a sales pipeline",
+    "audience": "Teams tracking leads and following up with customers",
+    "topics": "Contact records, pipeline stages, reporting and data migration"
+  },
+  "e-commerce-store": {
+    "alt": "Online storefront displayed beside product packaging",
+    "audience": "Retailers and brands preparing to sell online",
+    "topics": "Product catalogue, checkout, payment and fulfilment requirements"
+  },
+  "social-media-marketing": {
+    "alt": "Workspace with social content and campaign planning",
+    "audience": "Businesses coordinating their presence across social channels",
+    "topics": "Audience selection, content planning and reporting goals"
+  },
+  "facebook-marketing": {
+    "alt": "Blue campaign and engagement dashboards",
+    "audience": "Businesses planning Facebook content or campaigns",
+    "topics": "Audience, creative formats, campaign objectives and budget"
+  },
+  "instagram-marketing": {
+    "alt": "Studio photographer and mobile photo feed",
+    "audience": "Brands that rely on visual content and product discovery",
+    "topics": "Content formats, publishing cadence and campaign goals"
+  },
+  "google-ads": {
+    "alt": "Workstation with advertising campaign charts",
+    "audience": "Businesses exploring paid campaigns with a defined budget",
+    "topics": "Campaign objectives, keyword planning, budget and conversion tracking"
+  },
+  "seo": {
+    "alt": "Search visibility dashboard and magnifying glass",
+    "audience": "Website owners seeking stronger visibility in organic search",
+    "topics": "Site structure, content priorities and search measurement"
+  },
+  "graphic-design-branding": {
+    "alt": "Printed colour swatches beside a design workstation",
+    "audience": "Businesses developing or updating a visual identity",
+    "topics": "Logo usage, typography, colour and formats needed for delivery"
+  },
+  "video-editing": {
+    "alt": "Video preview and editing timeline on a widescreen monitor",
+    "audience": "Businesses with footage for product, training or promotional videos",
+    "topics": "Footage, pacing, captions and final export formats"
+  },
+  "reels-marketing": {
+    "alt": "Creator filming short-form video with a phone on a tripod",
+    "audience": "Brands planning short vertical videos for social feeds",
+    "topics": "Story ideas, recording needs, editing and distribution goals"
+  }
+}
