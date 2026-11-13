@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState, Suspense, lazy } from "react";
 import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { getData, type Site, type Service } from "./api";
-import { Brand, Ecosystem, Icon, ServiceCard, mediaSource } from "./components";
+import {
+  Brand,
+  Icon,
+  ServiceCard,
+  mediaSource,
+  Artwork,
+  serviceContent,
+} from "./components";
 import EnquiryForm from "./EnquiryForm";
 import Seo from "./Seo";
 const ChatWidget = lazy(() => import("./ChatWidget"));
@@ -142,37 +149,31 @@ function Home({ site }: { site: Site }) {
         baseUrl={site.public_url}
         image={site.settings.logo}
       />
-      <section className="hero wrap">
-        <div className="hero-copy">
-          <span className="eyebrow">
-            <i />
-            EVERY BIG STEP STARTS WITH A CONNECTION
-          </span>
-          <h1>
-            Grow your business.
-            <br />
-            <span>Go beyond.</span>
-          </h1>
-          <p>
-            From banking business services to software and digital marketing —
-            discover possibilities that move your business forward.
-          </p>
-          <div className="hero-actions">
-            <Link className="button primary" to="/services">
-              Explore services <Icon name="arrow" size={19} />
-            </Link>
-            <a className="button ghost" href="#contact">
-              Let’s talk <Icon name="phone" size={18} />
-            </a>
+      <section className="home-stage">
+        <div className="hero wrap">
+          <div className="hero-copy">
+            <h1>
+              Grow your business <span>with Global Link.</span>
+            </h1>
+            <p>
+              Explore banking and Digital Seva, business opportunities, software
+              and digital marketing in one place.
+            </p>
+            <div className="hero-actions">
+              <Link className="button primary" to="/services">
+                Explore services <Icon name="arrow" size={19} />
+              </Link>
+              <a className="button ghost" href="#contact">
+                Contact us <Icon name="phone" size={18} />
+              </a>
+            </div>
           </div>
-          <div className="hero-note">
-            <span className="tiny-check">
-              <Icon name="check" size={15} />
-            </span>
-            Explore your options. Make an informed next move.
-          </div>
+          <Artwork
+            slug="home"
+            alt="Contemporary Indian commercial district at dusk"
+            priority
+          />
         </div>
-        <Ecosystem />
       </section>
       <div className="category-ribbon">
         <div className="wrap">
@@ -215,12 +216,7 @@ function Home({ site }: { site: Site }) {
         <div className="wrap">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">BUILT AROUND YOUR NEXT STEP</span>
-              <h2>
-                Different needs.
-                <br />
-                <em>Connected solutions.</em>
-              </h2>
+              <h2>Featured services</h2>
             </div>
             <Link className="button outline" to="/services">
               View all services <Icon name="arrow" size={18} />
@@ -306,42 +302,42 @@ function Home({ site }: { site: Site }) {
         <div className="wrap focus-grid">
           {[
             [
-              "business-opportunities",
-              "Business opportunities",
-              "Explore your next avenue.",
-              "Retailer, distributor and other business opportunities. Find a starting point that fits your plans.",
-              "business",
+              "banking-financial",
+              "bank-csp",
+              "Banking, finance & Digital Seva",
             ],
-            [
-              "software-it",
-              "Software & IT solutions",
-              "Make your idea digital.",
-              "Websites, apps, business software and online stores — built around what you need to do.",
-              "code",
-            ],
+            ["business-opportunities", "retailer-id", "Business opportunities"],
+            ["software-it", "website-development", "Software & technology"],
             [
               "digital-marketing",
+              "social-media-marketing",
               "Marketing & creative",
-              "Put your brand in focus.",
-              "Explore social media, search, design and video services for your next campaign.",
-              "growth",
             ],
-          ]
-            .filter(([slug]) => site.categories.some((c) => c.slug === slug))
-            .map(([slug, label, title, copy, icon]) => (
+          ].map(([slug, image, title]) => {
+            const category = site.categories.find((c) => c.slug === slug);
+            if (!category) return null;
+            return (
               <article key={slug}>
-                <Icon name={icon} size={32} />
-                <span className="eyebrow">
-                  {site.categories.find((c) => c.slug === slug)?.name || label}
-                </span>
+                <Artwork slug={image} alt="" icon={category.icon} />
                 <h3>{title}</h3>
-                <p>{copy}</p>
+                <p>{category.summary}</p>
                 <Link className="text-link" to={"/services?category=" + slug}>
-                  Explore category <Icon name="arrow" size={18} />
-                  <span className="sr-only"> {label}</span>
+                  Explore {category.name} <Icon name="arrow" size={18} />
                 </Link>
+                {slug === "banking-financial" &&
+                  site.categories.some(
+                    (c) => c.slug === "digital-seva-kendra",
+                  ) && (
+                    <Link
+                      className="text-link"
+                      to="/services?category=digital-seva-kendra"
+                    >
+                      Explore Digital Seva
+                    </Link>
+                  )}
               </article>
-            ))}
+            );
+          })}
         </div>
       </section>
       <section className="section wrap process-section">
@@ -458,12 +454,7 @@ function Catalogue({ site }: { site: Site }) {
       <Link className="breadcrumb" to="/">
         Home / Services
       </Link>
-      <span className="eyebrow">FIND YOUR NEXT POSSIBILITY</span>
-      <h1>
-        One catalogue.
-        <br />
-        <em>Many ways forward.</em>
-      </h1>
+      <h1>Explore services</h1>
       <p className="intro">
         Explore the service that fits your plans. Contact the team for confirmed
         requirements, availability and fees.
@@ -500,13 +491,13 @@ function Catalogue({ site }: { site: Site }) {
         <p role="status">Loading services…</p>
       ) : filtered.length ? (
         <>
-          <p className="result-count">
+          <p className="result-count" role="status">
             {filtered.length} {filtered.length === 1 ? "service" : "services"}{" "}
             to explore
           </p>
           <div className="service-grid">
             {filtered.map((s) => (
-              <ServiceCard key={s.id} service={s} />
+              <ServiceCard key={s.id} service={s} heading="h2" />
             ))}
           </div>
         </>
@@ -540,6 +531,23 @@ function Detail({ site }: { site: Site }) {
       });
     return () => abort.abort();
   }, [slug]);
+  const [related, setRelated] = useState<Service[]>([]);
+  const categorySlug = service?.category.slug;
+  useEffect(() => {
+    if (!categorySlug) return;
+    const abort = new AbortController();
+    getData<Service[]>(
+      "/services?category=" + encodeURIComponent(categorySlug),
+      abort.signal,
+    )
+      .then((data) => {
+        if (!abort.signal.aborted) setRelated(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!abort.signal.aborted) setRelated([]);
+      });
+    return () => abort.abort();
+  }, [categorySlug]);
   if (error)
     return (
       <section className="wrap section empty-state">
@@ -562,6 +570,14 @@ function Detail({ site }: { site: Site }) {
       </section>
     );
   const s = service;
+  const guidance = serviceContent[s.slug];
+  const recommendations = related
+    .filter(
+      (candidate) =>
+        candidate.category.slug === s.category.slug &&
+        candidate.slug !== s.slug,
+    )
+    .slice(0, 3);
   const headings: Record<string, string> = {
     benefit: "Benefits",
     eligibility: "Eligibility",
@@ -588,25 +604,26 @@ function Detail({ site }: { site: Site }) {
         </Link>
         <div className="detail-heading">
           <div>
-            <span className="eyebrow">{s.category.name}</span>
             <h1>{s.title}</h1>
+            {s.slug === "website-development" && (
+              <p className="detail-promise">
+                Build a website that makes your business stand out.
+              </p>
+            )}
             <p className="intro">{s.short_description}</p>
             <a className="button primary" href="#contact">
-              {s.cta_text || "Discuss this service"}{" "}
-              <Icon name="arrow" size={18} />
+              {s.cta_text || "Enquire now"} <Icon name="arrow" size={18} />
             </a>
           </div>
-          <div className="detail-icon">
-            {mediaSource(s.hero_image || s.icon_path) ? (
-              <img
-                className="detail-hero-image"
-                src={mediaSource(s.hero_image || s.icon_path)}
-                alt={s.title}
-              />
-            ) : (
-              <Icon name={s.icon} size={92} />
-            )}
-          </div>
+          <Artwork
+            key={s.slug}
+            slug={s.slug}
+            custom={s.hero_image}
+            iconPath={s.icon_path}
+            alt={s.title}
+            icon={s.icon}
+            priority
+          />
         </div>
       </section>
       <div className="wrap detail-layout">
@@ -614,6 +631,35 @@ function Detail({ site }: { site: Site }) {
           <section className="detail-section">
             <h2>Overview</h2>
             <p>{s.description}</p>
+          </section>
+          {guidance && (
+            <section className="detail-section">
+              <h2>Plan your enquiry</h2>
+              <div className="detail-guidance">
+                <article>
+                  <h3>Who it’s for</h3>
+                  <p>{guidance.audience}.</p>
+                </article>
+                <article>
+                  <h3>What to discuss</h3>
+                  <p>{guidance.topics}.</p>
+                </article>
+              </div>
+            </section>
+          )}
+          <section className="detail-section">
+            <h2>How to enquire</h2>
+            <ol>
+              <li>Open the enquiry form and describe what you need.</li>
+              <li>
+                Submit your contact details with consent and keep the reference
+                shown after submission.
+              </li>
+              <li>
+                Discuss scope, availability and any applicable requirements with
+                the team.
+              </li>
+            </ol>
           </section>
           {s.sections?.map((section, i) => (
             <section className="detail-section" key={i}>
@@ -752,6 +798,16 @@ function Detail({ site }: { site: Site }) {
           </p>
         </aside>
       </div>
+      {recommendations.length > 0 && (
+        <section className="wrap section related-services">
+          <h2>Related services</h2>
+          <div className="service-grid">
+            {recommendations.map((candidate) => (
+              <ServiceCard key={candidate.id} service={candidate} />
+            ))}
+          </div>
+        </section>
+      )}
       <Contact site={site} service={s} />
     </>
   );

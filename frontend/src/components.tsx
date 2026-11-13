@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Service } from "./api";
+import { useState } from "react";
+import content from "./service-content.json";
 export function Icon({
   name = "spark",
   size = 24,
@@ -114,78 +116,89 @@ export function Brand({
     </span>
   );
 }
-export function ServiceCard({ service }: { service: Service }) {
+export function ServiceCard({
+  service,
+  heading: Heading = "h3",
+}: {
+  service: Service;
+  heading?: "h2" | "h3";
+}) {
   return (
     <article className="service-card">
-      <span className="icon-tile">
-        {mediaSource(service.icon_path) ? (
-          <img
-            className="service-icon-image"
-            width={27}
-            height={27}
-            loading="lazy"
-            decoding="async"
-            src={mediaSource(service.icon_path)}
-            alt=""
-          />
-        ) : (
-          <Icon name={service.icon} size={27} />
-        )}
-      </span>
-      <span className="service-category">{service.category.name}</span>
-      <h3>
-        <Link to={"/services/" + service.slug}>{service.title}</Link>
-      </h3>
-      <p>{service.short_description}</p>
-      <Link className="text-link" to={"/services/" + service.slug}>
-        View details <Icon name="arrow" size={18} />
-        <span className="sr-only"> for {service.title}</span>
-      </Link>
+      <Artwork
+        slug={service.slug}
+        custom={service.hero_image}
+        iconPath={service.icon_path}
+        alt={service.title}
+        icon={service.icon}
+      />
+      <div className="service-card-body">
+        <span className="service-category">{service.category.name}</span>
+        <Heading>
+          <Link to={"/services/" + service.slug}>{service.title}</Link>
+        </Heading>
+        <p>{service.short_description}</p>
+        <Link className="text-link" to={"/services/" + service.slug}>
+          Learn more <Icon name="arrow" size={18} />
+          <span className="sr-only"> for {service.title}</span>
+        </Link>
+      </div>
     </article>
   );
 }
-export function Ecosystem() {
+
+export const serviceContent: Record<
+  string,
+  { alt: string; audience: string; topics: string }
+> = content;
+const artwork = import.meta.glob<string>("./artwork/*.webp", {
+  eager: true,
+  import: "default",
+  query: "?url&no-inline",
+});
+
+export function Artwork({
+  slug,
+  alt,
+  custom,
+  icon,
+  iconPath,
+  priority = false,
+}: {
+  slug: string;
+  alt: string;
+  custom?: string | null;
+  icon?: string;
+  iconPath?: string | null;
+  priority?: boolean;
+}) {
+  const [failed, setFailed] = useState<string[]>([]);
+  const source = [
+    mediaSource(custom),
+    artwork[`./artwork/${slug}.webp`],
+    mediaSource(iconPath),
+  ].find((url) => url && !failed.includes(url));
   return (
-    <div
-      className="ecosystem"
-      aria-label="Banking, software, business and marketing connected through Global Link"
-      role="img"
-    >
-      <div className="orbit orbit-one" />
-      <div className="orbit orbit-two" />
-      <div className="orbit orbit-three" />
-      <div className="orbit-core">
-        <span>
-          G<span>L</span>
-        </span>
-        <small>
-          ONE CONNECTION.
-          <br />
-          MORE POSSIBILITIES.
-        </small>
-      </div>
-      <div className="orbit-node node-bank">
-        <Icon name="bank" />
-        <strong>Banking & finance</strong>
-        <small>Explore new avenues</small>
-      </div>
-      <div className="orbit-node node-code">
-        <Icon name="code" />
-        <strong>Software & IT</strong>
-        <small>Build your digital future</small>
-      </div>
-      <div className="orbit-node node-growth">
-        <Icon name="growth" />
-        <strong>Digital marketing</strong>
-        <small>Make your brand seen</small>
-      </div>
-      <div className="orbit-node node-business">
-        <Icon name="business" />
-        <strong>Business opportunities</strong>
-        <small>Take your next step</small>
-      </div>
-      <span className="orbit-dot dot-one" />
-      <span className="orbit-dot dot-two" />
+    <div className="artwork">
+      {source ? (
+        <img
+          src={source}
+          className={source === iconPath ? "artwork-icon" : undefined}
+          alt={
+            source === custom || source === iconPath
+              ? alt
+              : serviceContent[slug]?.alt || alt
+          }
+          width={720}
+          height={450}
+          decoding="async"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
+          onError={() => setFailed((sources) => [...sources, source])}
+        />
+      ) : (
+        <Icon name={icon} size={64} />
+      )}
     </div>
   );
 }
